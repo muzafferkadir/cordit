@@ -73,6 +73,35 @@ function VoiceControls({ onLeave }: { onLeave: () => void }) {
 function ParticipantsList() {
   const participants = useParticipants();
   const tracks = useTracks();
+  const [speakingParticipants, setSpeakingParticipants] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const listeners = new Map<any, (speaking: boolean) => void>();
+
+    participants.forEach(participant => {
+      const handler = (speaking: boolean) => {
+        console.log('🎤 Speaking change:', participant.identity, 'speaking:', speaking);
+        setSpeakingParticipants(prev => {
+          const next = new Set(prev);
+          if (speaking) {
+            next.add(participant.identity);
+          } else {
+            next.delete(participant.identity);
+          }
+          return next;
+        });
+      };
+      
+      listeners.set(participant, handler);
+      participant.on('isSpeakingChanged', handler);
+    });
+
+    return () => {
+      listeners.forEach((handler, participant) => {
+        participant.off('isSpeakingChanged', handler);
+      });
+    };
+  }, [participants]);
 
   const colors = ['var(--bg-card)', 'var(--bg-secondary)', 'var(--bg-success)', 'var(--bg-purple)'];
 
@@ -84,6 +113,7 @@ function ParticipantsList() {
             t => t.participant === participant && t.source === Track.Source.Microphone
           );
           const isMuted = audioTrack?.publication?.isMuted ?? true;
+          const isSpeaking = speakingParticipants.has(participant.identity);
 
           return (
             <div
@@ -92,18 +122,22 @@ function ParticipantsList() {
               style={{
                 background: colors[idx % 4],
                 padding: '0.875rem 1rem',
+                border: isSpeaking ? '3px solid var(--success)' : '3px solid black',
+                transition: 'border 0.1s ease',
               }}
             >
               <div className="flex items-center justify-between">
-                <span className="font-black text-sm">{participant.name || participant.identity}</span>
+                <span className="font-black text-sm">
+                  {participant.name || participant.identity}
+                </span>
                 <span 
                   className="badge-brutal text-xs"
                   style={{ 
-                    background: isMuted ? 'var(--error)' : 'var(--success)',
+                    background: isMuted ? 'var(--error)' : isSpeaking ? 'var(--success)' : 'var(--warning)',
                     color: 'white',
                   }}
                 >
-                  {isMuted ? 'MUTED' : 'LIVE'}
+                  {isMuted ? 'MUTED' : isSpeaking ? 'SPEAKING' : 'LIVE'}
                 </span>
               </div>
             </div>
