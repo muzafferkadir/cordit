@@ -7,6 +7,22 @@ import type { Message } from './types';
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 
+let globalSocket: Socket | null = null;
+let socketListenersAttached = false;
+
+const getSocket = (token: string) => {
+  if (!globalSocket || !globalSocket.connected) {
+    globalSocket = io(SOCKET_URL, {
+      auth: { token },
+      transports: ['websocket', 'polling'],
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionAttempts: 5,
+    });
+  }
+  return globalSocket;
+};
+
 export const useSocket = () => {
   const socketRef = useRef<Socket | null>(null);
   const { 
@@ -21,52 +37,51 @@ export const useSocket = () => {
   useEffect(() => {
     if (!user?.token) return;
 
-    const socket = io(SOCKET_URL, {
-      auth: { token: user.token },
-      transports: ['websocket', 'polling'],
-    });
-
+    const socket = getSocket(user.token);
     socketRef.current = socket;
 
-    socket.on('connect', () => {
-      console.log('✅ Socket connected');
-      setConnected(true);
-    });
+    if (!socketListenersAttached) {
+      socketListenersAttached = true;
 
-    socket.on('disconnect', () => {
-      console.log('❌ Socket disconnected');
-      setConnected(false);
-    });
+      socket.on('connect', () => {
+        console.log('✅ Socket connected');
+        setConnected(true);
+      });
 
-    socket.on('new_message', (message: Message) => {
-      console.log('📨 New message:', message);
-      addMessage(message);
-    });
+      socket.on('disconnect', () => {
+        console.log('❌ Socket disconnected');
+        setConnected(false);
+      });
 
-    socket.on('user_joined', (data: { username: string; timestamp: Date }) => {
-      console.log('👋 User joined:', data.username);
-    });
+      socket.on('new_message', (message: Message) => {
+        console.log('📨 New message:', message);
+        addMessage(message);
+      });
 
-    socket.on('user_left', (data: { username: string; timestamp: Date }) => {
-      console.log('👋 User left:', data.username);
-    });
+      socket.on('user_joined', (data: { username: string; timestamp: Date }) => {
+        console.log('👋 User joined:', data.username);
+      });
 
-    socket.on('user_typing', (data: { username: string; isTyping: boolean }) => {
-      if (data.isTyping) {
-        addTypingUser(data.username);
-        // Auto-remove after 3 seconds
-        setTimeout(() => removeTypingUser(data.username), 3000);
-      } else {
-        removeTypingUser(data.username);
-      }
-    });
+      socket.on('user_left', (data: { username: string; timestamp: Date }) => {
+        console.log('👋 User left:', data.username);
+      });
 
-    socket.on('error', (error: { message: string }) => {
-      console.error('❌ Socket error:', error.message);
-    });
+      socket.on('user_typing', (data: { username: string; isTyping: boolean }) => {
+        if (data.isTyping) {
+          addTypingUser(data.username);
+          // Auto-remove after 3 seconds
+          setTimeout(() => removeTypingUser(data.username), 3000);
+        } else {
+          removeTypingUser(data.username);
+        }
+      });
+
+      socket.on('error', (error: { message: string }) => {
+        console.error('❌ Socket error:', error.message);
+      });
+    }
 
     return () => {
-      socket.disconnect();
     };
   }, [user, addMessage, setConnected, addTypingUser, removeTypingUser]);
 
@@ -101,4 +116,12 @@ export const useSocket = () => {
   };
 
   return { sendMessage, startTyping, stopTyping, socket: socketRef.current };
+};
+
+export const disconnectSocket = () => {
+  if (globalSocket) {
+    globalSocket.disconnect();
+    globalSocket = null;
+    socketListenersAttached = false;
+  }
 };

@@ -61,7 +61,11 @@ export const useStore = create<AppState>((set) => ({
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      // Disconnect socket
+      import('./useSocket').then(({ disconnectSocket }) => {
+        disconnectSocket();
+        window.location.href = '/login';
+      });
     }
     set({ user: null, currentRoom: null, messages: [], activeUsers: [] });
   },

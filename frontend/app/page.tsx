@@ -49,6 +49,27 @@ export default function Home() {
   }, [user]);
 
   useEffect(() => {
+    if (!user) return;
+
+    const handleVisibilityChange = async () => {
+      if (!document.hidden && currentRoom) {
+        try {
+          const roomsData = await roomAPI.getAll();
+          setRooms(roomsData.rooms);
+          
+          const messagesData = await messageAPI.getByRoom(currentRoom._id);
+          setMessages(messagesData.messages);
+        } catch (error) {
+          console.error('Failed to reload data:', error);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [user, currentRoom]);
+
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
@@ -251,7 +272,10 @@ export default function Home() {
               <form onSubmit={handleSendMessage} style={{ padding: '1rem 1.5rem', background: 'var(--bg-card)', borderTop: '3px solid black' }}>
                 {typingUsers.length > 0 && (
                   <div className="text-xs font-bold mb-2" style={{ color: 'var(--purple)' }}>
-                    {typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
+                    {typingUsers.length === 1 
+                      ? `${typingUsers[0]} is typing...` 
+                      : `${typingUsers.length} people are typing...`
+                    }
                   </div>
                 )}
                 <div className="flex gap-3">
