@@ -20,8 +20,14 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [showCreateRoom, setShowCreateRoom] = useState(false);
-  const [mobileTab, setMobileTab] = useState<'chat' | 'voice' | 'rooms'>('chat');
   const [showRoomsMenu, setShowRoomsMenu] = useState(false);
+  const [isInVoice, setIsInVoice] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [joinTrigger, setJoinTrigger] = useState(false);
+  const [leaveTrigger, setLeaveTrigger] = useState(false);
+  const [muteTrigger, setMuteTrigger] = useState(false);
+  const [connecting, setConnecting] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -126,6 +132,25 @@ export default function Home() {
     } else {
       stopTyping();
     }
+  };
+
+  const handleJoinVoice = () => {
+    setConnecting(true);
+    setJoinTrigger(prev => !prev);
+  };
+
+  const handleLeaveVoice = () => {
+    setLeaveTrigger(prev => !prev);
+  };
+
+  const handleToggleMute = () => {
+    setMuteTrigger(prev => !prev);
+    // Toggle optimistically
+    setIsMuted(prev => !prev);
+  };
+
+  const handleToggleChat = () => {
+    setIsChatOpen(prev => !prev);
   };
 
   if (loading) {
@@ -301,9 +326,13 @@ export default function Home() {
             </>
           ) : (
             <div className="flex-1 flex items-center justify-center" style={{ background: 'var(--bg-main)', padding: '1.5rem' }}>
-              <div className="text-center card-brutal" style={{ background: 'var(--bg-card)', padding: '2.5rem' }}>
+              <div
+                className="text-center card-brutal cursor-pointer"
+                style={{ background: 'var(--bg-card)', padding: '2.5rem' }}
+                onClick={() => setShowRoomsMenu(true)}
+              >
                 <h2 className="text-3xl font-black mb-3">SELECT A ROOM</h2>
-                <p className="font-bold text-lg" style={{ color: 'var(--text-secondary)' }}>Choose a room to start chatting</p>
+                <p className="font-bold text-lg" style={{ color: 'var(--text-secondary)' }}>Tap here to choose a room</p>
               </div>
             </div>
           )}
@@ -317,26 +346,148 @@ export default function Home() {
         )}
       </div>
 
-      {/* Mobile Tab Navigation */}
+      {/* Mobile Navigation */}
       <MobileNav
-        activeTab={mobileTab}
-        onTabChange={setMobileTab}
+        isInVoice={isInVoice}
+        isMuted={isMuted}
+        isChatOpen={isChatOpen}
+        hasRoom={!!currentRoom}
+        onJoinVoice={handleJoinVoice}
+        onLeaveVoice={handleLeaveVoice}
+        onToggleMute={handleToggleMute}
+        onToggleChat={handleToggleChat}
+        connecting={connecting}
       />
 
-      {/* Mobile Voice Chat View */}
-      {mobileTab === 'voice' && currentRoom && (
+      {/* Mobile Voice Chat - Main View (Always visible on mobile when room selected) */}
+      {currentRoom && (
         <div
-          className="md:hidden fixed flex flex-col"
+          className="mobile-only md:hidden fixed"
           style={{
             background: 'var(--bg-secondary)',
             zIndex: 20,
+            top: '70px',
+            left: 0,
+            right: 0,
+            bottom: '55px',
+            overflowY: 'auto',
+          }}
+        >
+          <VoiceChat
+            isMobile={true}
+            onJoinStateChange={(joined) => {
+              setIsInVoice(joined);
+              setConnecting(false);
+            }}
+            onMuteStateChange={setIsMuted}
+            externalJoinTrigger={joinTrigger}
+            externalLeaveTrigger={leaveTrigger}
+            externalMuteTrigger={muteTrigger}
+          />
+        </div>
+      )}
+
+      {/* Mobile Chat Modal - Opens on top of Voice */}
+      {isChatOpen && currentRoom && (
+        <div
+          className="mobile-only md:hidden fixed flex flex-col"
+          style={{
+            background: 'var(--bg-main)',
+            zIndex: 30,
             top: 0,
             left: 0,
             right: 0,
-            bottom: '60px'
+            bottom: '60px',
           }}
         >
-          <VoiceChat />
+          {/* Chat Header with Back Button */}
+          <div className="gradient-purple" style={{ padding: '1rem 1.5rem', borderBottom: '3px solid black' }}>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsChatOpen(false)}
+                className="btn-brutal"
+                style={{ background: 'var(--bg-card)', padding: '0.5rem 0.75rem' }}
+              >
+                ← BACK
+              </button>
+              <div>
+                <h2 className="text-xl font-black text-white"># {currentRoom.name}</h2>
+                {currentRoom.description && <p className="text-xs font-bold text-white opacity-80">{currentRoom.description}</p>}
+              </div>
+            </div>
+          </div>
+
+          {/* Chat Messages */}
+          <div className="flex-1 overflow-y-auto" style={{ background: 'var(--bg-secondary)', padding: '1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {messages.map((msg, idx) => (
+                <div
+                  key={msg._id}
+                  className="card-brutal"
+                  style={{
+                    background: msg.messageType === 'system'
+                      ? 'var(--bg-accent)'
+                      : idx % 4 === 0
+                        ? 'var(--bg-card)'
+                        : idx % 4 === 1
+                          ? 'var(--bg-secondary)'
+                          : idx % 4 === 2
+                            ? 'var(--bg-success)'
+                            : 'var(--bg-purple)',
+                    padding: '0.75rem',
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-black text-xs">{msg.username}</span>
+                    <span className="badge-brutal text-xs" style={{ background: 'var(--bg-card)', fontSize: '0.6rem' }}>
+                      {format(new Date(msg.createdAt), 'HH:mm')}
+                    </span>
+                  </div>
+                  <p className="font-medium text-sm">{msg.text}</p>
+                </div>
+              ))}
+            </div>
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Chat Input */}
+          <form onSubmit={handleSendMessage} style={{ padding: '0.75rem 1rem', background: 'var(--bg-card)', borderTop: '3px solid black' }}>
+            {typingUsers.length > 0 && (
+              <div className="text-xs font-bold mb-2" style={{ color: 'var(--purple)' }}>
+                {typingUsers.length === 1
+                  ? `${typingUsers[0]} is typing...`
+                  : `${typingUsers.length} people are typing...`
+                }
+              </div>
+            )}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={messageText}
+                onChange={(e) => handleTyping(e.target.value)}
+                placeholder="Type your message..."
+                className="input-brutal flex-1"
+                maxLength={2000}
+                disabled={sendingMessage}
+                style={{
+                  background: 'var(--bg-main)',
+                  minHeight: '44px',
+                  fontSize: '0.875rem'
+                }}
+              />
+              <button
+                type="submit"
+                disabled={sendingMessage || !messageText.trim()}
+                className="btn-brutal"
+                style={{
+                  background: messageText.trim() ? 'var(--success)' : 'var(--bg-main)',
+                  color: messageText.trim() ? 'white' : 'var(--text-secondary)',
+                }}
+              >
+                {sendingMessage ? '...' : '→'}
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>

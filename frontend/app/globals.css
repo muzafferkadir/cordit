@@ -206,6 +206,13 @@ body {
   }
 }
 
+/* Force hide mobile elements on desktop */
+@media (min-width: 768px) {
+  .mobile-only {
+    display: none !important;
+  }
+}
+
 /* Desktop defaults */
 .hidden-mobile {
   display: none !important;

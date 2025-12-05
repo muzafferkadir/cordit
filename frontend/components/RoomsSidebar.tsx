@@ -24,7 +24,7 @@ export default function RoomsSidebar({
   // Mobile modal version - only show when open
   if (isMobile) {
     if (!isOpen) return null;
-    
+
     return (
       <>
         <div
@@ -89,24 +89,6 @@ export default function RoomsSidebar({
                 <span className="badge-brutal">{room.name.charAt(0).toUpperCase()}</span>
               </button>
             ))}
-            <button
-              onClick={() => {
-                onCreateRoom();
-                onClose?.();
-              }}
-              className="card-brutal"
-              style={{
-                background: 'var(--cyan)',
-                width: '100%',
-                padding: '1rem',
-                cursor: 'pointer',
-                color: 'white',
-                fontWeight: 700,
-                textTransform: 'uppercase',
-              }}
-            >
-              + CREATE ROOM
-            </button>
           </div>
         </div>
       </>
@@ -121,6 +103,7 @@ export default function RoomsSidebar({
         borderRight: '3px solid black',
         width: '80px',
         display: 'flex',
+        height: '100%',
         flexDirection: 'column',
       }}
     >

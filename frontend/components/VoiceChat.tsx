@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useStore } from '@/lib/store';
 import { roomAPI } from '@/lib/api';
 import { Track } from 'livekit-client';
-import { 
+import {
   LiveKitRoom,
   RoomAudioRenderer,
   useParticipants,
@@ -27,7 +27,7 @@ function VoiceControls({ onLeave }: { onLeave: () => void }) {
 
   const toggleMute = async () => {
     if (!localParticipant) return;
-    
+
     const audioTrack = localParticipant.getTrackPublication(Track.Source.Microphone);
     if (audioTrack) {
       await localParticipant.setMicrophoneEnabled(audioTrack.isMuted);
@@ -70,7 +70,7 @@ function VoiceControls({ onLeave }: { onLeave: () => void }) {
   );
 }
 
-function ParticipantsList() {
+function ParticipantsList({ compact = false }: { compact?: boolean }) {
   const participants = useParticipants();
   const tracks = useTracks();
   const [speakingParticipants, setSpeakingParticipants] = useState<Set<string>>(new Set());
@@ -90,7 +90,7 @@ function ParticipantsList() {
           return next;
         });
       };
-      
+
       listeners.set(participant, handler);
       participant.on('isSpeakingChanged', handler);
     });
@@ -105,8 +105,8 @@ function ParticipantsList() {
   const colors = ['var(--bg-card)', 'var(--bg-secondary)', 'var(--bg-success)', 'var(--bg-purple)'];
 
   return (
-    <div style={{ padding: '1.5rem' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+    <div style={{ padding: compact ? '0.75rem' : '1.5rem' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: compact ? '0.5rem' : '1rem' }}>
         {participants.map((participant, idx) => {
           const audioTrack = tracks.find(
             t => t.participant === participant && t.source === Track.Source.Microphone
@@ -120,7 +120,7 @@ function ParticipantsList() {
               className="card-brutal"
               style={{
                 background: colors[idx % 4],
-                padding: '0.875rem 1rem',
+                padding: compact ? '0.625rem 0.75rem' : '0.875rem 1rem',
                 border: isSpeaking ? '3px solid var(--success)' : '3px solid black',
                 transition: 'border 0.1s ease',
               }}
@@ -129,9 +129,9 @@ function ParticipantsList() {
                 <span className="font-black text-sm">
                   {participant.name || participant.identity}
                 </span>
-                <span 
+                <span
                   className="badge-brutal text-xs"
-                  style={{ 
+                  style={{
                     background: isMuted ? 'var(--error)' : isSpeaking ? 'var(--success)' : 'var(--warning)',
                     color: 'white',
                   }}
@@ -147,9 +147,42 @@ function ParticipantsList() {
   );
 }
 
-function VoiceConnected({ onLeave }: { onLeave: () => void }) {
+function VoiceConnected({ onLeave, isMobile = false, externalMuteTrigger, onMuteStateChange }: {
+  onLeave: () => void;
+  isMobile?: boolean;
+  externalMuteTrigger?: boolean;
+  onMuteStateChange?: (isMuted: boolean) => void;
+}) {
   const { currentRoom } = useStore();
+  const { localParticipant } = useLocalParticipant();
+  const prevMuteTrigger = useRef(externalMuteTrigger);
 
+  // Handle external mute trigger for mobile
+  useEffect(() => {
+    if (isMobile && prevMuteTrigger.current !== externalMuteTrigger && externalMuteTrigger !== undefined) {
+      prevMuteTrigger.current = externalMuteTrigger;
+      if (localParticipant) {
+        const audioTrack = localParticipant.getTrackPublication(Track.Source.Microphone);
+        if (audioTrack) {
+          const newMuted = !audioTrack.isMuted;
+          localParticipant.setMicrophoneEnabled(audioTrack.isMuted);
+          onMuteStateChange?.(newMuted);
+        }
+      }
+    }
+  }, [externalMuteTrigger, isMobile, localParticipant, onMuteStateChange]);
+
+  // Mobile version - just participants, no header/controls
+  if (isMobile) {
+    return (
+      <>
+        <ParticipantsList compact={true} />
+        <RoomAudioRenderer />
+      </>
+    );
+  }
+
+  // Desktop version - full UI
   return (
     <div className="h-full flex flex-col" style={{ background: 'var(--bg-secondary)' }}>
       <div className="gradient-purple" style={{ padding: '1rem 1.5rem', borderBottom: '3px solid black' }}>
@@ -170,7 +203,23 @@ function VoiceConnected({ onLeave }: { onLeave: () => void }) {
   );
 }
 
-export default function VoiceChat() {
+interface VoiceChatProps {
+  isMobile?: boolean;
+  onJoinStateChange?: (isJoined: boolean) => void;
+  onMuteStateChange?: (isMuted: boolean) => void;
+  externalJoinTrigger?: boolean;
+  externalLeaveTrigger?: boolean;
+  externalMuteTrigger?: boolean;
+}
+
+export default function VoiceChat({
+  isMobile = false,
+  onJoinStateChange,
+  onMuteStateChange,
+  externalJoinTrigger,
+  externalLeaveTrigger,
+  externalMuteTrigger,
+}: VoiceChatProps = {}) {
   const { currentRoom, user } = useStore();
   const [isJoined, setIsJoined] = useState(false);
   const [livekitToken, setLivekitToken] = useState<string | null>(null);
@@ -194,11 +243,12 @@ export default function VoiceChat() {
 
     try {
       const response = await roomAPI.join(currentRoom._id);
-      
+
       if (response.livekitToken && response.livekitUrl) {
         setLivekitToken(response.livekitToken);
         setLivekitUrl(response.livekitUrl);
         setIsJoined(true);
+        onJoinStateChange?.(true);
       } else {
         setError('Voice not available');
       }
@@ -214,10 +264,52 @@ export default function VoiceChat() {
     setIsJoined(false);
     setLivekitToken(null);
     setLivekitUrl('');
+    onJoinStateChange?.(false);
   };
 
-  // Not joined - show join button
-  if (!isJoined) {
+  // Track previous trigger values
+  const prevJoinTrigger = useRef(externalJoinTrigger);
+  const prevLeaveTrigger = useRef(externalLeaveTrigger);
+
+  // Handle external join trigger
+  useEffect(() => {
+    if (prevJoinTrigger.current !== externalJoinTrigger && externalJoinTrigger !== undefined) {
+      prevJoinTrigger.current = externalJoinTrigger;
+      if (!isJoined && !connecting) {
+        joinVoice();
+      }
+    }
+  }, [externalJoinTrigger]);
+
+  // Handle external leave trigger  
+  useEffect(() => {
+    if (prevLeaveTrigger.current !== externalLeaveTrigger && externalLeaveTrigger !== undefined) {
+      prevLeaveTrigger.current = externalLeaveTrigger;
+      if (isJoined) {
+        leaveVoice();
+      }
+    }
+  }, [externalLeaveTrigger]);
+
+  // Mobile mode - show waiting state if not joined
+  if (isMobile && !isJoined) {
+    return (
+      <div style={{ padding: '1.5rem', textAlign: 'center' }}>
+        <div className="card-brutal" style={{ background: 'var(--bg-card)', padding: '1.5rem' }}>
+          <h3 className="font-black text-lg mb-2">🎤 Voice Chat</h3>
+          <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+            {connecting ? 'Connecting...' : 'Tap "Join Voice" to connect'}
+          </p>
+          {error && (
+            <p className="text-sm font-bold mt-2" style={{ color: 'var(--error)' }}>{error}</p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Not joined - show join button (desktop only)
+  if (!isJoined && !isMobile) {
     return (
       <div className="h-full flex flex-col" style={{ background: 'var(--bg-secondary)' }}>
         <div className="gradient-purple" style={{ padding: '1rem 1.5rem', borderBottom: '3px solid black' }}>
@@ -260,9 +352,14 @@ export default function VoiceChat() {
         connect={true}
         audio={true}
         video={false}
-        className="h-full"
+        className={isMobile ? '' : 'h-full'}
       >
-        <VoiceConnected onLeave={leaveVoice} />
+        <VoiceConnected
+          onLeave={leaveVoice}
+          isMobile={isMobile}
+          externalMuteTrigger={externalMuteTrigger}
+          onMuteStateChange={onMuteStateChange}
+        />
       </LiveKitRoom>
     );
   }

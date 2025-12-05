@@ -1,88 +1,147 @@
 'use client';
 
 interface MobileNavProps {
-  activeTab: 'chat' | 'voice' | 'rooms';
-  onTabChange: (tab: 'chat' | 'voice' | 'rooms') => void;
-  hasUnreadVoice?: boolean;
+  isInVoice: boolean;
+  isMuted: boolean;
+  isChatOpen: boolean;
+  hasRoom: boolean;
+  onJoinVoice: () => void;
+  onLeaveVoice: () => void;
+  onToggleMute: () => void;
+  onToggleChat: () => void;
+  connecting?: boolean;
 }
 
-export default function MobileNav({ activeTab, onTabChange, hasUnreadVoice }: MobileNavProps) {
+export default function MobileNav({
+  isInVoice,
+  isMuted,
+  isChatOpen,
+  hasRoom,
+  onJoinVoice,
+  onLeaveVoice,
+  onToggleMute,
+  onToggleChat,
+  connecting = false
+}: MobileNavProps) {
+  const isJoinDisabled = !hasRoom || connecting;
+
   return (
     <nav
-      className="show-mobile fixed bottom-0 left-0 right-0"
+      className="mobile-only md:hidden flex fixed bottom-0 left-0 right-0"
       style={{
         background: 'var(--bg-card)',
-        borderTop: '3px solid black',
-        display: 'flex',
         justifyContent: 'center',
         padding: 0,
-        zIndex: 40,
+        zIndex: 50,
       }}
     >
-      <button
-        onClick={() => onTabChange('chat')}
-        style={{
-          flex: 1,
-          padding: '1rem 0.75rem',
-          background: activeTab === 'chat' ? 'var(--bg-accent)' : 'transparent',
-          border: activeTab === 'chat' ? '3px solid black' : 'none',
-          borderRight: '1.5px solid var(--border)',
-          cursor: 'pointer',
-          fontWeight: 700,
-          textTransform: 'uppercase',
-          fontSize: '0.75rem',
-          transition: 'all 0.15s ease',
-        }}
-      >
-        💬 CHAT
-      </button>
-      <button
-        onClick={() => onTabChange('voice')}
-        style={{
-          flex: 1,
-          padding: '1rem 0.75rem',
-          background: activeTab === 'voice' ? 'var(--bg-accent)' : 'transparent',
-          border: activeTab === 'voice' ? '3px solid black' : 'none',
-          borderRight: '1.5px solid var(--border)',
-          cursor: 'pointer',
-          fontWeight: 700,
-          textTransform: 'uppercase',
-          fontSize: '0.75rem',
-          transition: 'all 0.15s ease',
-          position: 'relative',
-        }}
-      >
-        🎤 VOICE
-        {hasUnreadVoice && (
-          <span
+      {!isInVoice ? (
+        <>
+          <button
+            onClick={onJoinVoice}
+            disabled={isJoinDisabled}
             style={{
-              position: 'absolute',
-              top: '0.25rem',
-              right: '0.25rem',
-              width: '8px',
-              height: '8px',
-              background: 'var(--error)',
-              borderRadius: '50%',
+              flex: 1,
+              padding: '1rem 0.75rem',
+              background: isJoinDisabled ? 'var(--bg-main)' : 'var(--success)',
+              borderTop: '3px solid black',
+              borderBottom: '3px solid black',
+              borderLeft: '3px solid black',
+              borderRight: '1.5px solid var(--border)',
+              cursor: isJoinDisabled ? 'not-allowed' : 'pointer',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              fontSize: '0.75rem',
+              color: isJoinDisabled ? 'var(--text-secondary)' : 'white',
+              transition: 'all 0.15s ease',
+              opacity: isJoinDisabled ? 0.6 : 1,
             }}
-          />
-        )}
-      </button>
-      <button
-        onClick={() => onTabChange('rooms')}
-        style={{
-          flex: 1,
-          padding: '1rem 0.75rem',
-          background: activeTab === 'rooms' ? 'var(--bg-accent)' : 'transparent',
-          border: activeTab === 'rooms' ? '3px solid black' : 'none',
-          cursor: 'pointer',
-          fontWeight: 700,
-          textTransform: 'uppercase',
-          fontSize: '0.75rem',
-          transition: 'all 0.15s ease',
-        }}
-      >
-        🏠 ROOMS
-      </button>
+          >
+            {connecting ? '...' : '🎤 JOIN VOICE'}
+          </button>
+          <button
+            onClick={onToggleChat}
+            style={{
+              flex: 1,
+              padding: '1rem 0.75rem',
+              background: isChatOpen ? 'var(--bg-accent)' : 'var(--bg-card)',
+              borderTop: '3px solid black',
+              borderBottom: '3px solid black',
+              borderLeft: '1.5px solid var(--border)',
+              borderRight: '3px solid black',
+              cursor: 'pointer',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              fontSize: '0.75rem',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            💬 CHAT
+          </button>
+        </>
+      ) : (
+        <>
+          <button
+            onClick={onLeaveVoice}
+            style={{
+              flex: 1,
+              padding: '1rem 0.75rem',
+              background: 'var(--warning)',
+              borderTop: '3px solid black',
+              borderBottom: '3px solid black',
+              borderLeft: '3px solid black',
+              borderRight: '1.5px solid var(--border)',
+              cursor: 'pointer',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              fontSize: '0.75rem',
+              color: 'white',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            🚪 LEAVE
+          </button>
+          <button
+            onClick={onToggleMute}
+            style={{
+              flex: 1,
+              padding: '1rem 0.75rem',
+              background: isMuted ? 'var(--error)' : 'var(--success)',
+              borderTop: '3px solid black',
+              borderBottom: '3px solid black',
+              borderLeft: '1.5px solid var(--border)',
+              borderRight: '1.5px solid var(--border)',
+              cursor: 'pointer',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              fontSize: '0.75rem',
+              color: 'white',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            {isMuted ? '🔇 UNMUTE' : '🔊 MUTE'}
+          </button>
+          <button
+            onClick={onToggleChat}
+            style={{
+              flex: 1,
+              padding: '1rem 0.75rem',
+              background: isChatOpen ? 'var(--bg-accent)' : 'var(--bg-card)',
+              borderTop: '3px solid black',
+              borderBottom: '3px solid black',
+              borderLeft: '1.5px solid var(--border)',
+              borderRight: '3px solid black',
+              cursor: 'pointer',
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              fontSize: '0.75rem',
+              transition: 'all 0.15s ease',
+            }}
+          >
+            💬 CHAT
+          </button>
+        </>
+      )}
     </nav>
   );
 }
