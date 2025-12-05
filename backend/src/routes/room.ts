@@ -6,7 +6,7 @@ import checkRoles from '../middlewares/checkRoles';
 import { createRoom, updateRoom } from '../validators/room';
 import Room from '../models/room';
 import Message from '../models/message';
-import { createLiveKitToken, createLiveKitRoom, deleteLiveKitRoom } from '../utils/livekit';
+import { createLiveKitToken, createLiveKitRoom, deleteLiveKitRoom, getLiveKitRoom } from '../utils/livekit';
 
 const router: Router = express.Router();
 
@@ -182,6 +182,33 @@ router.post('/:id/join', verifyToken, async (req: Request, res: Response) => {
       return;
     }
 
+    const livekitUrl = process.env.LIVEKIT_URL || 'ws://localhost:7880';
+
+    // Ensure LiveKit room exists for legacy rooms created before voice support
+    if (!room.livekitRoomName) {
+      const livekitRoomName = `room_${room._id}_${Date.now()}`;
+      try {
+        await createLiveKitRoom(livekitRoomName, room.maxUsers);
+        room.livekitRoomName = livekitRoomName;
+        await room.save();
+      } catch (error) {
+        // If room already exists in LiveKit, reuse it; otherwise surface the error
+        try {
+          const existing = await getLiveKitRoom(livekitRoomName);
+          if (existing) {
+            room.livekitRoomName = livekitRoomName;
+            await room.save();
+          } else {
+            throw error;
+          }
+        } catch (innerError) {
+          console.error('Error creating LiveKit room on join:', innerError);
+          res.sendError(500, 'Failed to initialize voice for this room');
+          return;
+        }
+      }
+    }
+
     const username = req.user?.username;
     if (!username) {
       res.sendError(401, 'User not authenticated');
@@ -220,7 +247,7 @@ router.post('/:id/join', verifyToken, async (req: Request, res: Response) => {
         message: 'Already in room', 
         room,
         livekitToken,
-        livekitUrl: process.env.LIVEKIT_URL,
+        livekitUrl,
       });
       return;
     }
@@ -273,7 +300,7 @@ router.post('/:id/join', verifyToken, async (req: Request, res: Response) => {
       message: 'Joined room successfully', 
       room,
       livekitToken,
-      livekitUrl: process.env.LIVEKIT_URL,
+      livekitUrl,
     });
   } catch (error) {
     res.sendError(500, error);

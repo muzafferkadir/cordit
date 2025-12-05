@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  livekit:
+    image: livekit/livekit-server:latest
+    command: --dev
+    environment:
+      LIVEKIT_KEYS: "devkey: secret"
+      UDP_PORT: 7882
+    ports:
+      - "7880:7880"   # HTTP / WebSocket API (use ws://localhost:7880 for clients)
+      - "7881:7881"   # Web UI / metrics
+      - "7882:7882/udp" # RTP/RTCP media
+    restart: unless-stopped

@@ -1,11 +1,12 @@
 import { AccessToken, RoomServiceClient } from 'livekit-server-sdk';
 
-const livekitUrl = process.env.LIVEKIT_URL || 'ws://localhost:7880';
+const livekitWsUrl = process.env.LIVEKIT_URL || 'ws://localhost:7880';
+const livekitApiUrl = process.env.LIVEKIT_API_URL || livekitWsUrl.replace(/^ws/, 'http');
 const apiKey = process.env.LIVEKIT_API_KEY || '';
 const apiSecret = process.env.LIVEKIT_API_SECRET || '';
 
-// LiveKit Room Service Client
-export const roomService = new RoomServiceClient(livekitUrl, apiKey, apiSecret);
+// LiveKit Room Service Client (uses HTTP(S) endpoint, not WS)
+export const roomService = new RoomServiceClient(livekitApiUrl, apiKey, apiSecret);
 
 /**
  * Create a LiveKit access token for a user to join a room

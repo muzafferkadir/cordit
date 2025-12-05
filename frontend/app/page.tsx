@@ -115,26 +115,22 @@ export default function Home() {
 
   return (
     <div className="h-screen flex flex-col" style={{ background: 'var(--bg-main)' }}>
-      <header className="border-b-3 border-black gradient-yellow" style={{ borderWidth: '3px', padding: '1rem 1.5rem' }}>
+      <header className="gradient-yellow" style={{ padding: '1rem 1.5rem', borderTop: '3px solid black', borderBottom: '3px solid black' }}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div>
-              <h1 className="text-2xl font-black tracking-tight">LITECORD</h1>
-              <p className="text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>
-                {isConnected ? 'LIVE' : 'OFFLINE'}
-              </p>
-            </div>
+          <div>
+            <h1 className="text-xl font-black tracking-tight">LITECORD</h1>
+            <p className="text-xs font-bold mt-1" style={{ opacity: 0.7 }}>
+              {isConnected ? 'LIVE' : 'OFFLINE'}
+            </p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="badge-brutal" style={{ background: user.role === 'admin' ? 'var(--purple)' : 'var(--cyan)', color: 'white' }}>
+            <span className="badge-brutal" style={{ background: user.role === 'admin' ? 'var(--purple)' : 'var(--cyan)', color: 'white' }}>
               {user.username}
-            </div>
+            </span>
             {user.role === 'admin' && (
-              <>
-                <button onClick={() => router.push('/admin')} className="btn-brutal" style={{ background: 'var(--purple)', color: 'white' }}>
-                  INVITE CODES
-                </button>
-              </>
+              <button onClick={() => router.push('/admin')} className="btn-brutal" style={{ background: 'var(--purple)', color: 'white' }}>
+                INVITE CODES
+              </button>
             )}
             <button onClick={logout} className="btn-brutal" style={{ background: 'var(--error)', color: 'white' }}>
               LOGOUT
@@ -144,55 +140,53 @@ export default function Home() {
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        <aside className="border-r-3 border-black flex flex-col" style={{ background: 'var(--bg-secondary)', borderWidth: '3px', width: '80px' }}>
-          <div className="flex-1 overflow-y-auto" style={{ padding: '0.75rem' }}>
-            {rooms.map((room, index) => (
+        <aside className="flex flex-col" style={{ background: 'var(--bg-secondary)', borderRight: '3px solid black', width: '80px' }}>
+          <div className="flex-1 overflow-y-auto" style={{ padding: '1rem 0.75rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {rooms.map((room, index) => (
+                <button 
+                  key={room._id} 
+                  onClick={() => selectRoom(room._id)} 
+                  className="card-brutal font-black"
+                  style={{ 
+                    background: currentRoom?._id === room._id 
+                      ? 'var(--bg-accent)' 
+                      : index % 3 === 0 
+                        ? 'var(--bg-card)' 
+                        : index % 3 === 1 
+                          ? 'var(--bg-success)' 
+                          : 'var(--bg-purple)',
+                    width: '100%',
+                    height: '56px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.5rem',
+                    cursor: 'pointer'
+                  }}
+                  title={room.name}
+                >
+                  {room.name.charAt(0).toUpperCase()}
+                </button>
+              ))}
               <button 
-                key={room._id} 
-                onClick={() => selectRoom(room._id)} 
-                className={`room-item border-3 border-black transition-all font-black ${currentRoom?._id === room._id ? 'active' : ''}`}
+                onClick={() => setShowCreateRoom(true)}
+                className="card-brutal font-black"
                 style={{ 
-                  background: currentRoom?._id === room._id 
-                    ? 'var(--bg-accent)' 
-                    : index % 3 === 0 
-                      ? 'var(--bg-card)' 
-                      : index % 3 === 1 
-                        ? 'var(--bg-success)' 
-                        : 'var(--bg-purple)',
-                  borderWidth: '3px',
+                  background: 'var(--cyan)',
                   width: '100%',
                   height: '56px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '1.5rem',
-                  marginBottom: '0.75rem',
+                  fontSize: '1.75rem',
                   cursor: 'pointer'
                 }}
-                title={room.name}
+                title="Add New Room"
               >
-                {room.name.charAt(0).toUpperCase()}
+                +
               </button>
-            ))}
-            <button 
-              onClick={() => setShowCreateRoom(true)}
-              className="border-3 border-black transition-all font-black"
-              style={{ 
-                background: 'var(--cyan)',
-                borderWidth: '3px',
-                width: '100%',
-                height: '56px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.75rem',
-                cursor: 'pointer !important',
-                boxShadow: '4px 4px 0 var(--shadow)'
-              }}
-              title="Add New Room"
-            >
-              +
-            </button>
+            </div>
           </div>
         </aside>
 
@@ -218,45 +212,44 @@ export default function Home() {
             </div>
           ) : currentRoom ? (
             <>
-              <div className="border-b-3 border-black gradient-purple" style={{ borderWidth: '3px', padding: '1rem 1.5rem' }}>
-                <div>
-                  <h2 className="text-2xl font-black text-white"># {currentRoom.name}</h2>
-                  {currentRoom.description && <p className="text-xs mt-1 font-bold text-white opacity-80">{currentRoom.description}</p>}
-                </div>
+              <div className="gradient-purple" style={{ padding: '1rem 1.5rem', borderBottom: '3px solid black' }}>
+                <h2 className="text-xl font-black text-white"># {currentRoom.name}</h2>
+                {currentRoom.description && <p className="text-xs mt-1 font-bold text-white opacity-80">{currentRoom.description}</p>}
               </div>
 
-              <div className="flex-1 overflow-y-auto" style={{ background: 'var(--bg-main)', padding: '2rem' }}>
-                {messages.map((msg, idx) => (
-                  <div 
-                    key={msg._id} 
-                    className="message-bubble card-brutal" 
-                    style={{ 
-                      background: msg.messageType === 'system' 
-                        ? 'var(--bg-accent)' 
-                        : idx % 4 === 0 
-                          ? 'var(--bg-card)' 
-                          : idx % 4 === 1 
-                            ? 'var(--bg-secondary)' 
-                            : idx % 4 === 2 
-                              ? 'var(--bg-success)' 
-                              : 'var(--bg-purple)',
-                      padding: '0.875rem 1rem',
-                      marginBottom: '1rem'
-                    }}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <span className="font-black text-sm">{msg.username}</span>
-                      <span className="text-xs font-mono badge-brutal" style={{ background: 'var(--bg-card)', padding: '0.25rem 0.625rem' }}>
-                        {format(new Date(msg.createdAt), 'HH:mm')}
-                      </span>
+              <div className="flex-1 overflow-y-auto" style={{ background: 'var(--bg-secondary)', padding: '1.5rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                  {messages.map((msg, idx) => (
+                    <div 
+                      key={msg._id} 
+                      className="card-brutal" 
+                      style={{ 
+                        background: msg.messageType === 'system' 
+                          ? 'var(--bg-accent)' 
+                          : idx % 4 === 0 
+                            ? 'var(--bg-card)' 
+                            : idx % 4 === 1 
+                              ? 'var(--bg-secondary)' 
+                              : idx % 4 === 2 
+                                ? 'var(--bg-success)' 
+                                : 'var(--bg-purple)',
+                        padding: '0.875rem 1rem',
+                      }}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-black text-sm">{msg.username}</span>
+                        <span className="badge-brutal text-xs" style={{ background: 'var(--bg-card)' }}>
+                          {format(new Date(msg.createdAt), 'HH:mm')}
+                        </span>
+                      </div>
+                      <p className="font-medium text-sm">{msg.text}</p>
                     </div>
-                    <p className="font-medium text-sm">{msg.text}</p>
-                  </div>
-                ))}
+                  ))}
+                </div>
                 <div ref={messagesEndRef} />
               </div>
 
-              <form onSubmit={handleSendMessage} className="border-t-3 border-black" style={{ borderWidth: '3px', padding: '1rem 1.5rem', background: 'var(--bg-card)' }}>
+              <form onSubmit={handleSendMessage} style={{ padding: '1rem 1.5rem', background: 'var(--bg-card)', borderTop: '3px solid black' }}>
                 {typingUsers.length > 0 && (
                   <div className="text-xs font-bold mb-2" style={{ color: 'var(--purple)' }}>
                     {typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...
@@ -302,8 +295,8 @@ export default function Home() {
           )}
         </main>
 
-        {currentRoom && currentRoom.livekitRoomName && (
-          <aside className="border-l-3 border-black" style={{ background: 'var(--bg-success)', borderWidth: '3px', width: '320px' }}>
+        {currentRoom && (
+          <aside style={{ background: 'var(--bg-secondary)', width: '320px', borderLeft: '3px solid black' }}>
             <VoiceChat />
           </aside>
         )}
