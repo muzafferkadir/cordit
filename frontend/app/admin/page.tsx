@@ -19,18 +19,20 @@ export default function AdminPage() {
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (!storedUser) {
+    // Wait for AuthProvider to load user from localStorage
+    const token = localStorage.getItem('token');
+    if (!token) {
       router.push('/login');
       return;
     }
-    const parsedUser = JSON.parse(storedUser);
-    if (parsedUser.role !== 'admin') {
+    if (user && user.role !== 'admin') {
       router.push('/');
       return;
     }
-    loadInviteCodes();
-  }, [router]);
+    if (user) {
+      loadInviteCodes();
+    }
+  }, [router, user]);
 
   const loadInviteCodes = async () => {
     try {
@@ -89,20 +91,22 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: 'var(--bg-main)' }}>
-      <header className="border-b-3 border-black gradient-yellow" style={{ borderWidth: '3px', padding: '1rem 1.5rem' }}>
+    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-main)' }}>
+      <header className="gradient-yellow" style={{ padding: '1rem 1.5rem', borderTop: '3px solid black', borderBottom: '3px solid black' }}>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-black tracking-tight">ADMIN PANEL</h1>
-            <p className="text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>
+            <h1 className="text-xl font-black tracking-tight">ADMIN PANEL</h1>
+            <p className="text-xs font-bold mt-1" style={{ opacity: 0.7 }}>
               Manage invite codes and rooms
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="badge-brutal" style={{ background: 'var(--purple)', color: 'white' }}>
+            <span className="badge-brutal" style={{ background: 'var(--purple)', color: 'white' }}>
               ADMIN
-            </div>
-            <div className="font-black text-base">{user?.username}</div>
+            </span>
+            <span className="badge-brutal" style={{ background: 'var(--cyan)', color: 'white' }}>
+              {user?.username}
+            </span>
             <button
               onClick={() => router.push('/')}
               className="btn-brutal"
@@ -121,133 +125,133 @@ export default function AdminPage() {
         </div>
       </header>
 
-      <div className="max-w-6xl mx-auto" style={{ padding: '2rem' }}>
-        {/* Notifications */}
-        {error && (
-          <div className="card-brutal" style={{ background: 'var(--error)', color: 'white', padding: '1rem', marginBottom: '1.5rem' }}>
-            <p className="font-bold">{error}</p>
-          </div>
-        )}
-
-        {success && (
-          <div className="card-brutal" style={{ background: 'var(--success)', color: 'white', padding: '1rem', marginBottom: '1.5rem' }}>
-            <p className="font-bold">{success}</p>
-          </div>
-        )}
-
-        {/* Create Invite Code */}
-        <div className="card-brutal" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
-          <h2 className="text-xl font-black" style={{ marginBottom: '1.25rem', color: 'var(--cyan)' }}>CREATE INVITE CODE</h2>
-          <form onSubmit={handleCreateCode} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div className="grid grid-cols-2" style={{ gap: '1rem' }}>
-              <div>
-                <label className="block text-sm font-bold" style={{ marginBottom: '0.625rem' }}>EXPIRES IN (HOURS)</label>
-                 <input
-                   type="number"
-                   value={expiresInHours}
-                   onChange={(e) => setExpiresInHours(Number(e.target.value))}
-                   className="input-brutal"
-                   min={1}
-                   max={168}
-                   required
-                 />
-               </div>
-               <div>
-                 <label className="block text-sm font-bold" style={{ marginBottom: '0.625rem' }}>MAX USES</label>
-                <input
-                  type="number"
-                  value={maxUses}
-                  onChange={(e) => setMaxUses(Number(e.target.value))}
-                  className="input-brutal"
-                  min={1}
-                  max={100}
-                  required
-                />
-              </div>
-            </div>
-            <button
-              type="submit"
-              disabled={creating}
-              className="btn-brutal w-full"
-              style={{ background: 'var(--success)', color: 'white', marginTop: '0.5rem' }}
-            >
-              {creating ? 'CREATING...' : 'CREATE CODE'}
-            </button>
-          </form>
-        </div>
-
-        {/* Invite Codes List */}
-        <div className="card-brutal" style={{ padding: '1.5rem' }}>
-          <h2 className="text-xl font-black" style={{ marginBottom: '1.25rem', color: 'var(--purple)' }}>INVITE CODES ({inviteCodes.length})</h2>
-          
-          {inviteCodes.length === 0 ? (
-            <div className="text-center" style={{ padding: '3rem 0' }}>
-              <h3 className="text-2xl font-black" style={{ marginBottom: '0.5rem' }}>NO INVITE CODES</h3>
-              <p className="font-bold" style={{ color: 'var(--text-secondary)' }}>
-                Create your first invite code above
-              </p>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {inviteCodes.map((code) => (
-                <div
-                  key={code.code}
-                  className="card-brutal"
-                  style={{
-                    background: code.isAvailable ? 'var(--bg-card)' : 'var(--bg-main)',
-                    padding: '1.25rem',
-                    opacity: code.isAvailable ? 1 : 0.6,
-                  }}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center" style={{ gap: '0.75rem', marginBottom: '1rem' }}>
-                        <code
-                          className="text-xl font-black font-mono cursor-pointer hover:underline"
-                          onClick={() => copyToClipboard(code.code)}
-                          title="Click to copy"
-                          style={{ cursor: 'pointer' }}
-                        >
-                          {code.code}
-                        </code>
-                        {code.isAvailable ? (
-                          <span className="badge-brutal text-xs" style={{ background: 'var(--success)', color: 'white' }}>
-                            ACTIVE
-                          </span>
-                        ) : code.isExpired ? (
-                          <span className="badge-brutal text-xs" style={{ background: 'var(--warning)', color: 'white' }}>
-                            EXPIRED
-                          </span>
-                        ) : (
-                          <span className="badge-brutal text-xs" style={{ background: 'var(--error)', color: 'white' }}>
-                            USED UP
-                          </span>
-                        )}
-                      </div>
-                      
-                      <div className="text-sm" style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-                        <p>👤 Created by: <strong>{code.createdByUsername}</strong></p>
-                        <p>📅 Created: <strong>{format(new Date(code.createdAt), 'MMM dd, yyyy HH:mm')}</strong></p>
-                        <p>⏰ Expires: <strong>{format(new Date(code.expiresAt), 'MMM dd, yyyy HH:mm')}</strong></p>
-                        <p>🔢 Uses: <strong>{code.currentUses} / {code.maxUses}</strong> ({code.remainingUses} remaining)</p>
-                        {code.usedByUsername && (
-                          <p>👥 Last used by: <strong>{code.usedByUsername}</strong></p>
-                        )}
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => handleDeleteCode(code.code)}
-                      className="btn-brutal"
-                      style={{ background: 'var(--error)', color: 'white', fontSize: '0.8125rem', padding: '0.5rem 1rem', height: 'auto' }}
-                    >
-                      DELETE
-                    </button>
-                  </div>
-                </div>
-              ))}
+      <div className="flex-1" style={{ background: 'var(--bg-secondary)', padding: '1.5rem' }}>
+        <div className="max-w-4xl mx-auto">
+          {/* Notifications */}
+          {error && (
+            <div className="card-brutal" style={{ background: 'var(--error)', color: 'white', padding: '0.875rem 1rem', marginBottom: '1rem' }}>
+              <p className="font-bold text-sm">{error}</p>
             </div>
           )}
+
+          {success && (
+            <div className="card-brutal" style={{ background: 'var(--success)', color: 'white', padding: '0.875rem 1rem', marginBottom: '1rem' }}>
+              <p className="font-bold text-sm">{success}</p>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {/* Create Invite Code */}
+            <div className="card-brutal" style={{ padding: '0.875rem 1rem' }}>
+              <h2 className="text-sm font-black" style={{ marginBottom: '1rem', color: 'var(--cyan)' }}>CREATE INVITE CODE</h2>
+              <form onSubmit={handleCreateCode}>
+                <div className="grid grid-cols-2" style={{ gap: '1rem', marginBottom: '1rem' }}>
+                  <div>
+                    <label className="block text-xs font-bold" style={{ marginBottom: '0.5rem' }}>EXPIRES IN (HOURS)</label>
+                    <input
+                      type="number"
+                      value={expiresInHours}
+                      onChange={(e) => setExpiresInHours(Number(e.target.value))}
+                      className="input-brutal"
+                      min={1}
+                      max={168}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold" style={{ marginBottom: '0.5rem' }}>MAX USES</label>
+                    <input
+                      type="number"
+                      value={maxUses}
+                      onChange={(e) => setMaxUses(Number(e.target.value))}
+                      className="input-brutal"
+                      min={1}
+                      max={100}
+                      required
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={creating}
+                  className="btn-brutal w-full"
+                  style={{ background: 'var(--success)', color: 'white' }}
+                >
+                  {creating ? 'CREATING...' : 'CREATE CODE'}
+                </button>
+              </form>
+            </div>
+
+            {/* Invite Codes List */}
+            <div className="card-brutal" style={{ padding: '0.875rem 1rem' }}>
+              <h2 className="text-sm font-black" style={{ marginBottom: '1rem', color: 'var(--purple)' }}>INVITE CODES ({inviteCodes.length})</h2>
+              
+              {inviteCodes.length === 0 ? (
+                <div className="text-center" style={{ padding: '2rem 0' }}>
+                  <p className="font-bold text-sm" style={{ color: 'var(--text-secondary)' }}>
+                    No invite codes yet. Create one above.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {inviteCodes.map((code, idx) => (
+                    <div
+                      key={code.code}
+                      className="card-brutal"
+                      style={{
+                        background: code.isAvailable 
+                          ? idx % 4 === 0 
+                            ? 'var(--bg-card)' 
+                            : idx % 4 === 1 
+                              ? 'var(--bg-secondary)' 
+                              : idx % 4 === 2 
+                                ? 'var(--bg-success)' 
+                                : 'var(--bg-purple)'
+                          : 'var(--bg-main)',
+                        padding: '0.875rem 1rem',
+                        opacity: code.isAvailable ? 1 : 0.6,
+                      }}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <code
+                            className="font-black font-mono cursor-pointer hover:underline"
+                            onClick={() => copyToClipboard(code.code)}
+                            title="Click to copy"
+                          >
+                            {code.code}
+                          </code>
+                          <span 
+                            className="badge-brutal text-xs" 
+                            style={{ 
+                              background: code.isAvailable ? 'var(--success)' : code.isExpired ? 'var(--warning)' : 'var(--error)', 
+                              color: 'white' 
+                            }}
+                          >
+                            {code.isAvailable ? 'ACTIVE' : code.isExpired ? 'EXPIRED' : 'USED UP'}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => handleDeleteCode(code.code)}
+                          className="btn-brutal"
+                          style={{ background: 'var(--error)', color: 'white', fontSize: '0.75rem', padding: '0.375rem 0.75rem', height: 'auto' }}
+                        >
+                          DELETE
+                        </button>
+                      </div>
+                      <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+                        <span>Uses: <strong>{code.currentUses}/{code.maxUses}</strong></span>
+                        <span style={{ margin: '0 0.5rem' }}>•</span>
+                        <span>Expires: <strong>{format(new Date(code.expiresAt), 'MMM dd, HH:mm')}</strong></span>
+                        <span style={{ margin: '0 0.5rem' }}>•</span>
+                        <span>By: <strong>{code.createdByUsername}</strong></span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

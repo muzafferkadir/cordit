@@ -164,9 +164,13 @@ router.delete('/:code', verifyToken, checkRoles('admin'), async (req: Request, r
       return;
     }
 
+    // Get User ObjectId from username
+    const User = (await import('../models/user')).default;
+    const user = await User.findOne({ username: req.user?.username });
+
     inviteCode.isDeleted = true;
     inviteCode.deletedAt = new Date();
-    inviteCode.deletedBy = req.user?.username as any;
+    inviteCode.deletedBy = user?._id;
     await inviteCode.save();
 
     res.sendResponse(200, 'Invite code deleted successfully');

@@ -10,7 +10,7 @@ import VoiceChat from '@/components/VoiceChat';
 
 export default function Home() {
   const router = useRouter();
-  const { user, currentRoom, rooms, messages, isConnected, typingUsers, setUser, setCurrentRoom, setRooms, setMessages, logout } = useStore();
+  const { user, currentRoom, rooms, messages, isConnected, typingUsers, setCurrentRoom, setRooms, setMessages, logout } = useStore();
   const { sendMessage, startTyping, stopTyping } = useSocket();
   
   const [messageText, setMessageText] = useState('');
@@ -21,13 +21,12 @@ export default function Home() {
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (!storedUser) {
+    // Wait for AuthProvider to load user from localStorage
+    const token = localStorage.getItem('token');
+    if (!token) {
       router.push('/login');
-      return;
     }
-    setUser(JSON.parse(storedUser));
-  }, [router, setUser]);
+  }, [router]);
 
   useEffect(() => {
     if (!user) return;
