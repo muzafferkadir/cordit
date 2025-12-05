@@ -21,6 +21,12 @@
   --cyan: #06B6D4;
   --pink: #EC4899;
   --orange: #F97316;
+
+  /* Responsive breakpoints */
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
 }
 
 @theme inline {
@@ -60,22 +66,26 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-width: 44px;
 }
 
-.btn-brutal:hover:not(:disabled) {
-  cursor: pointer !important;
-  box-shadow: 6px 6px 0 var(--shadow);
-  transform: translate(-2px, -2px);
-}
+@media (max-width: 767px) {
+  .btn-brutal {
+    padding: 0.5rem 1rem;
+    height: 44px;
+    font-size: 0.75rem;
+    box-shadow: 3px 3px 0 var(--shadow);
+  }
 
-.btn-brutal:active:not(:disabled) {
-  box-shadow: 2px 2px 0 var(--shadow);
-  transform: translate(2px, 2px);
-}
+  .btn-brutal:hover:not(:disabled) {
+    box-shadow: 4px 4px 0 var(--shadow);
+    transform: translate(-1px, -1px);
+  }
 
-.btn-brutal:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  .btn-brutal:active:not(:disabled) {
+    box-shadow: 1px 1px 0 var(--shadow);
+    transform: translate(1px, 1px);
+  }
 }
 
 /* Card Brutal */
@@ -85,6 +95,13 @@ body {
   box-shadow: 6px 6px 0 var(--shadow);
   padding: 1rem;
   position: relative;
+}
+
+@media (max-width: 767px) {
+  .card-brutal {
+    padding: 0.75rem;
+    box-shadow: 3px 3px 0 var(--shadow);
+  }
 }
 
 /* Input Brutal */
@@ -99,6 +116,7 @@ body {
   transition: all 0.15s ease;
   font-family: var(--font-geist-mono);
   width: 100%;
+  min-height: 44px;
 }
 
 .input-brutal:focus {
@@ -108,6 +126,18 @@ body {
 
 .input-brutal::placeholder {
   color: var(--text-secondary);
+}
+
+@media (max-width: 767px) {
+  .input-brutal {
+    padding: 0.625rem 0.875rem;
+    font-size: 0.9375rem;
+  }
+
+  .input-brutal:focus {
+    box-shadow: 2px 2px 0 var(--shadow);
+    transform: translate(-1px, -1px);
+  }
 }
 
 /* Scrollbar */
@@ -130,6 +160,24 @@ body {
   background: var(--text-secondary);
 }
 
+@media (max-width: 767px) {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+    border: none;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--text-secondary);
+    border: none;
+    border-radius: 4px;
+  }
+}
+
 /* Badge */
 .badge-brutal {
   padding: 0.25rem 0.75rem;
@@ -140,6 +188,78 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   box-shadow: 2px 2px 0 var(--shadow);
+}
+
+@media (max-width: 767px) {
+  .badge-brutal {
+    padding: 0.25rem 0.625rem;
+    font-size: 0.65rem;
+    box-shadow: 1px 1px 0 var(--shadow);
+  }
+}
+
+/* Responsive Utilities */
+/* Mobile-specific height adjustment for navbar */
+@media (max-width: 767px) {
+  .mobile-container {
+    height: calc(100vh - 60px) !important;
+  }
+}
+
+/* Desktop defaults */
+.hidden-mobile {
+  display: none !important;
+}
+
+.show-mobile {
+  display: none !important;
+}
+
+/* Mobile overrides */
+@media (max-width: 767px) {
+
+  /* Hide on mobile */
+  .hidden-mobile {
+    display: none !important;
+  }
+
+  /* Show only on mobile */
+  .show-mobile {
+    display: block !important;
+  }
+
+  /* Mobile padding */
+  .px-mobile {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .py-mobile {
+    padding-top: 0.75rem;
+    padding-bottom: 0.75rem;
+  }
+
+  /* Mobile font sizes */
+  .text-sm-mobile {
+    font-size: 0.875rem;
+  }
+
+  .text-xs-mobile {
+    font-size: 0.75rem;
+  }
+}
+
+@media (min-width: 768px) {
+
+  /* Hide on desktop */
+  .show-mobile {
+    display: none !important;
+  }
+
+  /* Show on desktop */
+  .hidden-mobile {
+    display: flex !important;
+  }
 }
 
 /* Message Bubble */

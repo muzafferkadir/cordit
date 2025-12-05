@@ -93,14 +93,14 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-main)' }}>
       <header className="gradient-yellow" style={{ padding: '1rem 1.5rem', borderTop: '3px solid black', borderBottom: '3px solid black' }}>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between" style={{ flexWrap: 'wrap', gap: '0.75rem' }}>
           <div>
             <h1 className="text-xl font-black tracking-tight">ADMIN PANEL</h1>
             <p className="text-xs font-bold mt-1" style={{ opacity: 0.7 }}>
-              Manage invite codes and rooms
+              Manage invite codes
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="hidden-mobile flex items-center gap-3">
             <span className="badge-brutal" style={{ background: 'var(--purple)', color: 'white' }}>
               ADMIN
             </span>
@@ -122,10 +122,26 @@ export default function AdminPage() {
               LOGOUT
             </button>
           </div>
+          <div className="show-mobile flex items-center gap-2">
+            <button
+              onClick={() => router.push('/')}
+              className="btn-brutal"
+              style={{ background: 'var(--cyan)', color: 'white', height: '36px', padding: '0.375rem 0.75rem', fontSize: '0.65rem' }}
+            >
+              BACK
+            </button>
+            <button
+              onClick={logout}
+              className="btn-brutal"
+              style={{ background: 'var(--error)', color: 'white', height: '36px', padding: '0.375rem 0.75rem', fontSize: '0.65rem' }}
+            >
+              OUT
+            </button>
+          </div>
         </div>
       </header>
 
-      <div className="flex-1" style={{ background: 'var(--bg-secondary)', padding: '1.5rem' }}>
+      <div className="flex-1" style={{ background: 'var(--bg-secondary)', padding: '1rem', paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <div className="max-w-4xl mx-auto">
           {/* Notifications */}
           {error && (
@@ -145,7 +161,7 @@ export default function AdminPage() {
             <div className="card-brutal" style={{ padding: '0.875rem 1rem' }}>
               <h2 className="text-sm font-black" style={{ marginBottom: '1rem', color: 'var(--cyan)' }}>CREATE INVITE CODE</h2>
               <form onSubmit={handleCreateCode}>
-                <div className="grid grid-cols-2" style={{ gap: '1rem', marginBottom: '1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
                   <div>
                     <label className="block text-xs font-bold" style={{ marginBottom: '0.5rem' }}>EXPIRES IN (HOURS)</label>
                     <input
@@ -212,39 +228,39 @@ export default function AdminPage() {
                         opacity: code.isAvailable ? 1 : 0.6,
                       }}
                     >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2">
-                          <code
-                            className="font-black font-mono cursor-pointer hover:underline"
-                            onClick={() => copyToClipboard(code.code)}
-                            title="Click to copy"
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <div className="flex items-center justify-between" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
+                          <div className="flex items-center gap-2" style={{ flexWrap: 'wrap' }}>
+                            <code
+                              className="font-black font-mono cursor-pointer hover:underline text-sm"
+                              onClick={() => copyToClipboard(code.code)}
+                              title="Click to copy"
+                            >
+                              {code.code}
+                            </code>
+                            <span 
+                              className="badge-brutal text-xs" 
+                              style={{ 
+                                background: code.isAvailable ? 'var(--success)' : code.isExpired ? 'var(--warning)' : 'var(--error)', 
+                                color: 'white' 
+                              }}
+                            >
+                              {code.isAvailable ? 'ACTIVE' : code.isExpired ? 'EXPIRED' : 'USED UP'}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => handleDeleteCode(code.code)}
+                            className="btn-brutal"
+                            style={{ background: 'var(--error)', color: 'white', fontSize: '0.75rem', padding: '0.375rem 0.75rem', height: 'auto', minWidth: '60px' }}
                           >
-                            {code.code}
-                          </code>
-                          <span 
-                            className="badge-brutal text-xs" 
-                            style={{ 
-                              background: code.isAvailable ? 'var(--success)' : code.isExpired ? 'var(--warning)' : 'var(--error)', 
-                              color: 'white' 
-                            }}
-                          >
-                            {code.isAvailable ? 'ACTIVE' : code.isExpired ? 'EXPIRED' : 'USED UP'}
-                          </span>
+                            DELETE
+                          </button>
                         </div>
-                        <button
-                          onClick={() => handleDeleteCode(code.code)}
-                          className="btn-brutal"
-                          style={{ background: 'var(--error)', color: 'white', fontSize: '0.75rem', padding: '0.375rem 0.75rem', height: 'auto' }}
-                        >
-                          DELETE
-                        </button>
-                      </div>
-                      <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>
-                        <span>Uses: <strong>{code.currentUses}/{code.maxUses}</strong></span>
-                        <span style={{ margin: '0 0.5rem' }}>•</span>
-                        <span>Expires: <strong>{format(new Date(code.expiresAt), 'MMM dd, HH:mm')}</strong></span>
-                        <span style={{ margin: '0 0.5rem' }}>•</span>
-                        <span>By: <strong>{code.createdByUsername}</strong></span>
+                        <div className="text-xs" style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <span>Uses: <strong>{code.currentUses}/{code.maxUses}</strong></span>
+                          <span>Expires: <strong>{format(new Date(code.expiresAt), 'MMM dd, HH:mm')}</strong></span>
+                          <span>By: <strong>{code.createdByUsername}</strong></span>
+                        </div>
                       </div>
                     </div>
                   ))}

@@ -44,26 +44,23 @@ export const useSocket = () => {
       socketListenersAttached = true;
 
       socket.on('connect', () => {
-        console.log('✅ Socket connected');
         setConnected(true);
       });
 
       socket.on('disconnect', () => {
-        console.log('❌ Socket disconnected');
         setConnected(false);
       });
 
       socket.on('new_message', (message: Message) => {
-        console.log('📨 New message:', message);
         addMessage(message);
       });
 
       socket.on('user_joined', (data: { username: string; timestamp: Date }) => {
-        console.log('👋 User joined:', data.username);
+        // User Has Joined
       });
 
       socket.on('user_left', (data: { username: string; timestamp: Date }) => {
-        console.log('👋 User left:', data.username);
+        // User Has Left
       });
 
       socket.on('user_typing', (data: { username: string; isTyping: boolean }) => {
@@ -87,11 +84,9 @@ export const useSocket = () => {
 
   useEffect(() => {
     if (currentRoom && socketRef.current?.connected) {
-      console.log('🚪 Joining room:', currentRoom.name);
       socketRef.current.emit('join_room', { roomId: currentRoom._id });
 
       return () => {
-        console.log('🚪 Leaving room:', currentRoom.name);
         socketRef.current?.emit('leave_room', { roomId: currentRoom._id });
       };
     }

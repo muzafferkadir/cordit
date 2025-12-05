@@ -78,18 +78,18 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-main)', padding: '2rem' }}>
-      <div className="card-brutal w-full" style={{ maxWidth: '460px', padding: '2rem' }}>
-        <div style={{ marginBottom: '2rem', textAlign: 'center' }}>
+    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-main)', padding: '1rem' }}>
+      <div className="card-brutal w-full" style={{ maxWidth: '460px', padding: '1.5rem' }}>
+        <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
           <h1 className="text-4xl font-black" style={{ color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
             JOIN LITECORD
           </h1>
           <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-            You need an invite code to register
+            Invite code required
           </p>
         </div>
 
-        <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+        <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <div>
             <label className="block text-sm font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
               INVITE CODE
@@ -167,7 +167,7 @@ export default function RegisterPage() {
             {loading ? '⏳ CREATING ACCOUNT...' : '→ REGISTER'}
           </button>
 
-          <div className="text-center" style={{ borderTop: '3px solid var(--border)', paddingTop: '1.25rem', marginTop: '1.5rem' }}>
+          <div className="text-center" style={{ borderTop: '3px solid var(--border)', paddingTop: '1rem', marginTop: '1rem' }}>
             <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
               Already have an account?{' '}
               <Link href="/login" className="font-bold underline" style={{ color: 'var(--text-primary)' }}>

@@ -80,7 +80,6 @@ function ParticipantsList() {
 
     participants.forEach(participant => {
       const handler = (speaking: boolean) => {
-        console.log('🎤 Speaking change:', participant.identity, 'speaking:', speaking);
         setSpeakingParticipants(prev => {
           const next = new Set(prev);
           if (speaking) {
