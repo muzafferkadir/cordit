@@ -6,6 +6,7 @@ import checkRoles from '../middlewares/checkRoles';
 import { createRoom, updateRoom } from '../validators/room';
 import Room from '../models/room';
 import Message from '../models/message';
+import { createLiveKitToken, createLiveKitRoom, deleteLiveKitRoom } from '../utils/livekit';
 
 const router: Router = express.Router();
 
@@ -68,12 +69,19 @@ router.post('/', verifyToken, checkRoles('admin'), validator(createRoom), async 
       return;
     }
 
+    // Generate unique LiveKit room name
+    const livekitRoomName = `room_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
+    // Create LiveKit room
+    await createLiveKitRoom(livekitRoomName, maxUsers);
+
     const room = new Room({
       name,
       description,
       maxUsers,
       isDefault: false,
       activeUsers: [],
+      livekitRoomName,
     });
 
     await room.save();
@@ -138,6 +146,15 @@ router.delete('/:id', verifyToken, checkRoles('admin'), async (req: Request, res
     room.deletedBy = req.user?.username as any;
     await room.save();
     
+    // Delete LiveKit room
+    if (room.livekitRoomName) {
+      try {
+        await deleteLiveKitRoom(room.livekitRoomName);
+      } catch (error) {
+        console.error('Error deleting LiveKit room:', error);
+      }
+    }
+    
     // Soft delete all messages in the room
     await Message.updateMany(
       { roomId: room._id, isDeleted: false },
@@ -165,19 +182,46 @@ router.post('/:id/join', verifyToken, async (req: Request, res: Response) => {
       return;
     }
 
-    const userId = req.user?.username;
-    if (!userId) {
+    const username = req.user?.username;
+    if (!username) {
       res.sendError(401, 'User not authenticated');
+      return;
+    }
+
+    // Get user from database to get ObjectId
+    const user = await (await import('../models/user')).default.findOne({ username });
+    if (!user) {
+      res.sendError(404, 'User not found');
       return;
     }
 
     // Check if user is already in the room
     const isUserInRoom = room.activeUsers.some(
-      (user) => user.username === userId,
+      (u) => u.username === username,
     );
 
     if (isUserInRoom) {
-      res.sendResponse(200, { message: 'Already in room', room });
+      // Generate LiveKit token even if already in room
+      let livekitToken = null;
+      if (room.livekitRoomName) {
+        try {
+          const existingUser = room.activeUsers.find(u => u.username === username);
+          livekitToken = await createLiveKitToken(
+            room.livekitRoomName,
+            username,
+            existingUser?.livekitParticipantId || `user_${username}_${Date.now()}`,
+          );
+        } catch (error) {
+          console.error('Error creating LiveKit token:', error);
+        }
+      }
+      
+      res.sendResponse(200, { 
+        message: 'Already in room', 
+        room,
+        livekitToken,
+        livekitUrl: process.env.LIVEKIT_URL,
+      });
       return;
     }
 
@@ -187,27 +231,50 @@ router.post('/:id/join', verifyToken, async (req: Request, res: Response) => {
       return;
     }
 
+    // Generate LiveKit participant ID
+    const livekitParticipantId = `user_${username}_${Date.now()}`;
+
     // Add user to room
     room.activeUsers.push({
-      userId: req.user?.username as any, // We'll fix this with proper user ID later
-      username: userId,
+      userId: user._id,
+      username: username,
       joinedAt: new Date(),
       isVoiceActive: false,
+      livekitParticipantId,
     });
 
     await room.save();
 
+    // Generate LiveKit token for voice chat
+    let livekitToken = null;
+    if (room.livekitRoomName) {
+      try {
+        livekitToken = await createLiveKitToken(
+          room.livekitRoomName,
+          username,
+          livekitParticipantId,
+        );
+      } catch (error) {
+        console.error('Error creating LiveKit token:', error);
+      }
+    }
+
     // Create system message
     const systemMessage = new Message({
       roomId: room._id,
-      userId: req.user?.username as any,
+      userId: user._id,
       username: 'System',
-      text: `${userId} joined the room`,
+      text: `${username} joined the room`,
       messageType: 'system',
     });
     await systemMessage.save();
 
-    res.sendResponse(200, { message: 'Joined room successfully', room });
+    res.sendResponse(200, { 
+      message: 'Joined room successfully', 
+      room,
+      livekitToken,
+      livekitUrl: process.env.LIVEKIT_URL,
+    });
   } catch (error) {
     res.sendError(500, error);
   }
@@ -222,16 +289,24 @@ router.post('/:id/leave', verifyToken, async (req: Request, res: Response) => {
       return;
     }
 
-    const userId = req.user?.username;
-    if (!userId) {
+    const username = req.user?.username;
+    if (!username) {
       res.sendError(401, 'User not authenticated');
+      return;
+    }
+
+    // Get user from database
+    const User = (await import('../models/user')).default;
+    const user = await User.findOne({ username });
+    if (!user) {
+      res.sendError(404, 'User not found');
       return;
     }
 
     // Remove user from room
     const initialLength = room.activeUsers.length;
     room.activeUsers = room.activeUsers.filter(
-      (user) => user.username !== userId,
+      (u) => u.username !== username,
     );
 
     if (room.activeUsers.length === initialLength) {
@@ -244,9 +319,9 @@ router.post('/:id/leave', verifyToken, async (req: Request, res: Response) => {
     // Create system message
     const systemMessage = new Message({
       roomId: room._id,
-      userId: req.user?.username as any,
+      userId: user._id,
       username: 'System',
-      text: `${userId} left the room`,
+      text: `${username} left the room`,
       messageType: 'system',
     });
     await systemMessage.save();

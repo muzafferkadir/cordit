@@ -19,6 +19,14 @@ router.post('/', verifyToken, checkRoles('admin'), validator(createInviteCode), 
   try {
     const { expiresInHours = 1, maxUses = 1 } = req.body;
 
+    // Get User ObjectId from username
+    const User = (await import('../models/user')).default;
+    const user = await User.findOne({ username: req.user?.username });
+    if (!user) {
+      res.sendError(404, 'User not found');
+      return;
+    }
+
     // Generate unique code
     let code = generateInviteCode();
     let existingCode = await InviteCode.findOne({ code, isDeleted: false });
@@ -34,8 +42,8 @@ router.post('/', verifyToken, checkRoles('admin'), validator(createInviteCode), 
 
     const inviteCode = new InviteCode({
       code,
-      createdBy: req.user?.username as any,
-      createdByUsername: req.user?.username,
+      createdBy: user._id,
+      createdByUsername: user.username,
       expiresAt,
       maxUses,
       currentUses: 0,

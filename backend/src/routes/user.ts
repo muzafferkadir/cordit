@@ -34,7 +34,11 @@ router.post('/login', validator(login), async (req: Request, res: Response) => {
       { expiresIn: EXPIRATION },
     );
 
-    res.sendResponse(200, { token });
+    res.sendResponse(200, { 
+      token,
+      username: user.username,
+      role: user.role
+    });
   } catch (error) {
     res.sendError(500, error);
   }
@@ -111,6 +115,7 @@ router.post('/register', validator(register), async (req: Request, res: Response
       message: 'User registered successfully',
       token,
       username: newUser.username,
+      role: newUser.role,
     });
   } catch (error) {
     res.sendError(500, error);

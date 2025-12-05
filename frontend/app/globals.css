@@ -1,0 +1,185 @@
+@import "tailwindcss";
+
+/* Neobrutalism Design System - Enhanced Colors */
+:root {
+  --bg-main: #F5F5F0;
+  --bg-card: #FFFFFF;
+  --bg-accent: #FFE66D;
+  --bg-secondary: #E0F2FE;
+  --bg-success: #DCFCE7;
+  --bg-error: #FEE2E2;
+  --bg-purple: #F3E8FF;
+  --text-primary: #000000;
+  --text-secondary: #525252;
+  --border: #000000;
+  --shadow: #000000;
+  --success: #4ADE80;
+  --error: #FF6B6B;
+  --warning: #FBBF24;
+  --info: #60A5FA;
+  --purple: #A855F7;
+  --cyan: #06B6D4;
+  --pink: #EC4899;
+  --orange: #F97316;
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg-main);
+  color: var(--text-primary);
+  font-family: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Neobrutalism Button */
+.btn-brutal {
+  position: relative;
+  padding: 0.625rem 1.25rem;
+  font-weight: 700;
+  border: 3px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  cursor: pointer !important;
+  transition: all 0.15s ease;
+  box-shadow: 4px 4px 0 var(--shadow);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.875rem;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-brutal:hover:not(:disabled) {
+  cursor: pointer !important;
+  box-shadow: 6px 6px 0 var(--shadow);
+  transform: translate(-2px, -2px);
+}
+
+.btn-brutal:active:not(:disabled) {
+  box-shadow: 2px 2px 0 var(--shadow);
+  transform: translate(2px, 2px);
+}
+
+.btn-brutal:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Card Brutal */
+.card-brutal {
+  background: var(--bg-card);
+  border: 3px solid var(--border);
+  box-shadow: 6px 6px 0 var(--shadow);
+  padding: 1rem;
+  position: relative;
+}
+
+/* Input Brutal */
+.input-brutal {
+  padding: 0.75rem 1rem;
+  border: 3px solid var(--border);
+  background: var(--bg-card);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  outline: none;
+  transition: all 0.15s ease;
+  font-family: var(--font-geist-mono);
+  width: 100%;
+}
+
+.input-brutal:focus {
+  box-shadow: 4px 4px 0 var(--shadow);
+  transform: translate(-2px, -2px);
+}
+
+.input-brutal::placeholder {
+  color: var(--text-secondary);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-main);
+  border: 2px solid var(--border);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-primary);
+  border: 2px solid var(--border);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}
+
+/* Badge */
+.badge-brutal {
+  padding: 0.25rem 0.75rem;
+  border: 2px solid var(--border);
+  font-weight: 700;
+  font-size: 0.75rem;
+  display: inline-block;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 2px 2px 0 var(--shadow);
+}
+
+/* Message Bubble */
+.message-bubble {
+  position: relative;
+  transition: all 0.2s ease;
+  margin-bottom: 1rem;
+}
+
+.message-bubble:hover {
+  transform: translateX(-2px);
+}
+
+/* Room Item */
+.room-item {
+  position: relative;
+  transition: all 0.15s ease;
+}
+
+.room-item:hover {
+  transform: translateX(4px);
+}
+
+.room-item.active {
+  box-shadow: 4px 4px 0 var(--shadow);
+}
+
+/* Gradient Backgrounds */
+.gradient-yellow {
+  background: linear-gradient(135deg, #FFE66D 0%, #FCD34D 100%);
+}
+
+.gradient-cyan {
+  background: linear-gradient(135deg, #06B6D4 0%, #0891B2 100%);
+}
+
+.gradient-purple {
+  background: linear-gradient(135deg, #A855F7 0%, #9333EA 100%);
+}
+
+.gradient-pink {
+  background: linear-gradient(135deg, #EC4899 0%, #DB2777 100%);
+}

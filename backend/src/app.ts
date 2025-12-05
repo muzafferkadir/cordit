@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express, { Application, Request, Response, NextFunction } from 'express';
+import { createServer } from 'http';
 import cors from 'cors';
 import mongoose from 'mongoose';
 import errorHandler from './middlewares/errorHandler';
@@ -11,8 +12,10 @@ import inviteCodeRoutes from './routes/inviteCode';
 import createAdmin from './utils/createAdmin';
 import createDefaultRoom from './utils/createDefaultRoom';
 import { logger } from './utils/logger';
+import { initializeSocket } from './utils/socket';
 
 const app: Application = express();
+const httpServer = createServer(app);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -58,11 +61,16 @@ db.once('open', async () => {
   await createDefaultRoom();
 });
 
+// Initialize Socket.io
+const io = initializeSocket(httpServer);
+
 const HOST = process.env.HOST || 'localhost';
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   logger.info(`Server running at http://${HOST}:${PORT}/`);
+  logger.info('Socket.io initialized');
 });
 
 export default app;
+export { io };
