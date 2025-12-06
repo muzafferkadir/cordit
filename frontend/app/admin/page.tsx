@@ -82,21 +82,21 @@ export default function AdminPage() {
   };
 
   const getCardBg = (idx: number, isAvailable: boolean) => {
-    if (!isAvailable) return 'bg-bg-main';
-    const bgs = ['bg-bg-card', 'bg-bg-secondary', 'bg-success-bg', 'bg-bg-purple'];
+    if (!isAvailable) return 'bg-surface';
+    const bgs = ['bg-card', 'bg-muted', 'bg-green-100', 'bg-purple-100'];
     return bgs[idx % 4];
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-bg-main">
+      <div className="min-h-screen flex items-center justify-center bg-surface">
         <div className="text-2xl font-black">LOADING...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-bg-main">
+    <div className="min-h-screen flex flex-col bg-surface">
       <header className="gradient-yellow px-6 py-4 border-y-[3px] border-black">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
@@ -124,7 +124,7 @@ export default function AdminPage() {
         </div>
       </header>
 
-      <div className="flex-1 bg-bg-secondary p-4">
+      <div className="flex-1 bg-muted p-4">
         <div className="max-w-4xl mx-auto">
           {error && (
             <div className="card-brutal bg-error text-white p-4 mb-4">
@@ -179,7 +179,7 @@ export default function AdminPage() {
 
               {inviteCodes.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="font-bold text-sm text-text-secondary">
+                  <p className="font-bold text-sm text-dim">
                     No invite codes yet. Create one above.
                   </p>
                 </div>
@@ -212,7 +212,7 @@ export default function AdminPage() {
                             DELETE
                           </button>
                         </div>
-                        <div className="text-xs text-text-secondary flex flex-col gap-1">
+                        <div className="text-xs text-dim flex flex-col gap-1">
                           <span>Uses: <strong>{code.currentUses}/{code.maxUses}</strong></span>
                           <span>Expires: <strong>{format(new Date(code.expiresAt), 'MMM dd, HH:mm')}</strong></span>
                           <span>By: <strong>{code.createdByUsername}</strong></span>

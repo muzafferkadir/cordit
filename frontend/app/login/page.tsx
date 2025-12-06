@@ -21,17 +21,17 @@ export default function LoginPage() {
 
     try {
       const data = await authAPI.login(username, password);
-      
+
       const user = {
         username: data.username,
         role: data.role,
         token: data.token,
       };
-      
+
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(user));
       setUser(user);
-      
+
       router.push('/');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Login failed');
@@ -41,27 +41,21 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-main)', padding: '1rem' }}>
-      <div className="card-brutal w-full" style={{ maxWidth: '460px', padding: '1.5rem' }}>
-        <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
-          <h1 className="text-4xl font-black" style={{ color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
-            LITECORD
-          </h1>
-          <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-            Voice chat + messaging
-          </p>
+    <div className="min-h-screen flex items-center justify-center bg-surface p-4">
+      <div className="card-brutal w-full max-w-md p-6">
+        <div className="mb-6 text-center">
+          <h1 className="text-4xl font-black text-dark mb-2">LITECORD</h1>
+          <p className="text-sm font-medium text-dim">Voice chat + messaging</p>
         </div>
 
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <form onSubmit={handleLogin} className="flex flex-col gap-4">
           <div>
-            <label className="block text-sm font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-              USERNAME
-            </label>
+            <label className="block text-sm font-bold mb-2 text-dark">USERNAME</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="input-brutal"
+              className="input-brutal w-full"
               placeholder="admin"
               required
               autoFocus
@@ -69,38 +63,35 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-              PASSWORD
-            </label>
+            <label className="block text-sm font-bold mb-2 text-dark">PASSWORD</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="input-brutal"
+              className="input-brutal w-full"
               placeholder="••••••••"
               required
             />
           </div>
 
           {error && (
-            <div className="p-3 border-3 border-black font-bold text-sm" style={{ background: 'var(--error)', color: 'white', borderWidth: '3px' }}>
-              ⚠️ {error}
+            <div className="p-3 border-[3px] border-black font-bold text-sm bg-error text-white">
+              {error}
             </div>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="btn-brutal w-full"
-            style={{ background: 'var(--bg-accent)' }}
+            className="btn-brutal w-full bg-primary text-white py-3"
           >
-            {loading ? '⏳ LOGGING IN...' : '→ LOGIN'}
+            {loading ? 'LOGGING IN...' : 'LOGIN'}
           </button>
 
-          <div className="text-center" style={{ borderTop: '3px solid var(--border)', paddingTop: '1rem', marginTop: '1rem' }}>
-            <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+          <div className="text-center border-t-[3px] border-border pt-4 mt-4">
+            <p className="text-sm font-medium text-dim">
               Need an account?{' '}
-              <Link href="/register" className="font-bold underline" style={{ color: 'var(--text-primary)' }}>
+              <Link href="/register" className="font-bold underline text-dark">
                 REGISTER HERE
               </Link>
             </p>

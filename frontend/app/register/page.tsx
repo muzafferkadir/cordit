@@ -58,17 +58,17 @@ export default function RegisterPage() {
 
     try {
       const data = await authAPI.register(username, password, inviteCode);
-      
+
       const user = {
         username: data.username,
         role: 'user' as 'user' | 'admin',
         token: data.token,
       };
-      
+
       localStorage.setItem('token', data.token);
       localStorage.setItem('user', JSON.stringify(user));
       setUser(user);
-      
+
       router.push('/');
     } catch (err: any) {
       setError(err.response?.data?.error || 'Registration failed');
@@ -77,58 +77,53 @@ export default function RegisterPage() {
     }
   };
 
+  const getCodeBorderColor = () => {
+    if (codeValid === true) return 'border-success';
+    if (codeValid === false) return 'border-error';
+    return 'border-border';
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-main)', padding: '1rem' }}>
-      <div className="card-brutal w-full" style={{ maxWidth: '460px', padding: '1.5rem' }}>
-        <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
-          <h1 className="text-4xl font-black" style={{ color: 'var(--text-primary)', marginBottom: '0.5rem' }}>
-            JOIN LITECORD
-          </h1>
-          <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
-            Invite code required
-          </p>
+    <div className="min-h-screen flex items-center justify-center bg-surface p-4">
+      <div className="card-brutal w-full max-w-md p-6">
+        <div className="mb-6 text-center">
+          <h1 className="text-4xl font-black text-dark mb-2">JOIN LITECORD</h1>
+          <p className="text-sm font-medium text-dim">Invite code required</p>
         </div>
 
-        <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+        <form onSubmit={handleRegister} className="flex flex-col gap-4">
           <div>
-            <label className="block text-sm font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-              INVITE CODE
-            </label>
+            <label className="block text-sm font-bold mb-2 text-dark">INVITE CODE</label>
             <div className="relative">
               <input
                 type="text"
                 value={inviteCode}
                 onChange={(e) => handleCodeChange(e.target.value)}
-                className="input-brutal"
+                className={`input-brutal w-full ${getCodeBorderColor()}`}
                 placeholder="A1B2C3D4"
                 maxLength={8}
                 required
                 autoFocus
-                style={{
-                  borderColor: codeValid === true ? 'var(--success)' : codeValid === false ? 'var(--error)' : 'var(--border)',
-                }}
               />
               {validatingCode && (
-                <span className="absolute right-4 top-1/2 -translate-y-1/2">⏳</span>
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-dim">...</span>
               )}
               {codeValid === true && (
-                <span className="absolute right-4 top-1/2 -translate-y-1/2">✅</span>
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-success font-bold">OK</span>
               )}
               {codeValid === false && (
-                <span className="absolute right-4 top-1/2 -translate-y-1/2">❌</span>
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-error font-bold">X</span>
               )}
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-              USERNAME
-            </label>
+            <label className="block text-sm font-bold mb-2 text-dark">USERNAME</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="input-brutal"
+              className="input-brutal w-full"
               placeholder="cooluser"
               minLength={3}
               maxLength={30}
@@ -137,14 +132,12 @@ export default function RegisterPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-bold mb-2" style={{ color: 'var(--text-primary)' }}>
-              PASSWORD
-            </label>
+            <label className="block text-sm font-bold mb-2 text-dark">PASSWORD</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="input-brutal"
+              className="input-brutal w-full"
               placeholder="••••••••"
               minLength={6}
               maxLength={30}
@@ -153,24 +146,23 @@ export default function RegisterPage() {
           </div>
 
           {error && (
-            <div className="p-3 border-3 border-black font-bold text-sm" style={{ background: 'var(--error)', color: 'white', borderWidth: '3px' }}>
-              ⚠️ {error}
+            <div className="p-3 border-[3px] border-black font-bold text-sm bg-error text-white">
+              {error}
             </div>
           )}
 
           <button
             type="submit"
             disabled={loading || codeValid !== true}
-            className="btn-brutal w-full"
-            style={{ background: codeValid === true ? 'var(--success)' : 'var(--bg-card)' }}
+            className={`btn-brutal w-full py-3 ${codeValid === true ? 'bg-primary text-white' : 'bg-gray-300 text-gray-500'}`}
           >
-            {loading ? '⏳ CREATING ACCOUNT...' : '→ REGISTER'}
+            {loading ? 'CREATING ACCOUNT...' : 'REGISTER'}
           </button>
 
-          <div className="text-center" style={{ borderTop: '3px solid var(--border)', paddingTop: '1rem', marginTop: '1rem' }}>
-            <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
+          <div className="text-center border-t-[3px] border-border pt-4 mt-4">
+            <p className="text-sm font-medium text-dim">
               Already have an account?{' '}
-              <Link href="/login" className="font-bold underline" style={{ color: 'var(--text-primary)' }}>
+              <Link href="/login" className="font-bold underline text-dark">
                 LOGIN HERE
               </Link>
             </p>
