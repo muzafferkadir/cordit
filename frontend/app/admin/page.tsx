@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/lib/store';
-import { inviteAPI, roomAPI } from '@/lib/api';
+import { inviteAPI } from '@/lib/api';
 import { format } from 'date-fns';
 import type { InviteCode } from '@/lib/types';
 
@@ -19,7 +19,6 @@ export default function AdminPage() {
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    // Wait for AuthProvider to load user from localStorage
     const token = localStorage.getItem('token');
     if (!token) {
       router.push('/login');
@@ -53,7 +52,7 @@ export default function AdminPage() {
 
     try {
       const data = await inviteAPI.create(expiresInHours, maxUses);
-      setSuccess(`✅ Created code: ${data.code}`);
+      setSuccess(`Created code: ${data.code}`);
       setExpiresInHours(1);
       setMaxUses(1);
       await loadInviteCodes();
@@ -69,7 +68,7 @@ export default function AdminPage() {
 
     try {
       await inviteAPI.delete(code);
-      setSuccess(`✅ Deleted code: ${code}`);
+      setSuccess(`Deleted code: ${code}`);
       await loadInviteCodes();
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to delete code');
@@ -78,159 +77,122 @@ export default function AdminPage() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    setSuccess(`📋 Copied: ${text}`);
+    setSuccess(`Copied: ${text}`);
     setTimeout(() => setSuccess(''), 2000);
+  };
+
+  const getCardBg = (idx: number, isAvailable: boolean) => {
+    if (!isAvailable) return 'bg-bg-main';
+    const bgs = ['bg-bg-card', 'bg-bg-secondary', 'bg-success-bg', 'bg-bg-purple'];
+    return bgs[idx % 4];
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-main)' }}>
-        <div className="text-2xl font-black">⏳ LOADING...</div>
+      <div className="min-h-screen flex items-center justify-center bg-bg-main">
+        <div className="text-2xl font-black">LOADING...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'var(--bg-main)' }}>
-      <header className="gradient-yellow" style={{ padding: '1rem 1.5rem', borderTop: '3px solid black', borderBottom: '3px solid black' }}>
-        <div className="flex items-center justify-between" style={{ flexWrap: 'wrap', gap: '0.75rem' }}>
+    <div className="min-h-screen flex flex-col bg-bg-main">
+      <header className="gradient-yellow px-6 py-4 border-y-[3px] border-black">
+        <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-xl font-black tracking-tight">ADMIN PANEL</h1>
-            <p className="text-xs font-bold mt-1" style={{ opacity: 0.7 }}>
-              Manage invite codes
-            </p>
+            <p className="text-xs font-bold mt-1 opacity-70">Manage invite codes</p>
           </div>
-          <div className="hidden-mobile flex items-center gap-3">
-            <span className="badge-brutal" style={{ background: 'var(--purple)', color: 'white' }}>
-              ADMIN
-            </span>
-            <span className="badge-brutal" style={{ background: 'var(--cyan)', color: 'white' }}>
-              {user?.username}
-            </span>
-            <button
-              onClick={() => router.push('/')}
-              className="btn-brutal"
-              style={{ background: 'var(--cyan)', color: 'white' }}
-            >
+          <div className="hidden md:flex items-center gap-3">
+            <span className="badge-brutal bg-purple text-white">ADMIN</span>
+            <span className="badge-brutal bg-cyan text-white">{user?.username}</span>
+            <button onClick={() => router.push('/')} className="btn-brutal bg-cyan text-white px-5 py-2">
               BACK TO CHAT
             </button>
-            <button
-              onClick={logout}
-              className="btn-brutal"
-              style={{ background: 'var(--error)', color: 'white' }}
-            >
+            <button onClick={logout} className="btn-brutal bg-error text-white px-5 py-2">
               LOGOUT
             </button>
           </div>
-          <div className="show-mobile flex items-center gap-2">
-            <button
-              onClick={() => router.push('/')}
-              className="btn-brutal"
-              style={{ background: 'var(--cyan)', color: 'white', height: '36px', padding: '0.375rem 0.75rem', fontSize: '0.65rem' }}
-            >
+          <div className="flex md:hidden items-center gap-2">
+            <button onClick={() => router.push('/')} className="btn-brutal bg-cyan text-white h-9 px-3 text-xs">
               BACK
             </button>
-            <button
-              onClick={logout}
-              className="btn-brutal"
-              style={{ background: 'var(--error)', color: 'white', height: '36px', padding: '0.375rem 0.75rem', fontSize: '0.65rem' }}
-            >
+            <button onClick={logout} className="btn-brutal bg-error text-white h-9 px-3 text-xs">
               OUT
             </button>
           </div>
         </div>
       </header>
 
-      <div className="flex-1" style={{ background: 'var(--bg-secondary)', padding: '1rem', paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      <div className="flex-1 bg-bg-secondary p-4">
         <div className="max-w-4xl mx-auto">
-          {/* Notifications */}
           {error && (
-            <div className="card-brutal" style={{ background: 'var(--error)', color: 'white', padding: '0.875rem 1rem', marginBottom: '1rem' }}>
+            <div className="card-brutal bg-error text-white p-4 mb-4">
               <p className="font-bold text-sm">{error}</p>
             </div>
           )}
 
           {success && (
-            <div className="card-brutal" style={{ background: 'var(--success)', color: 'white', padding: '0.875rem 1rem', marginBottom: '1rem' }}>
+            <div className="card-brutal bg-success text-white p-4 mb-4">
               <p className="font-bold text-sm">{success}</p>
             </div>
           )}
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {/* Create Invite Code */}
-            <div className="card-brutal" style={{ padding: '0.875rem 1rem' }}>
-              <h2 className="text-sm font-black" style={{ marginBottom: '1rem', color: 'var(--cyan)' }}>CREATE INVITE CODE</h2>
+          <div className="flex flex-col gap-4">
+            <div className="card-brutal p-4">
+              <h2 className="text-sm font-black text-cyan mb-4">CREATE INVITE CODE</h2>
               <form onSubmit={handleCreateCode}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-xs font-bold" style={{ marginBottom: '0.5rem' }}>EXPIRES IN (HOURS)</label>
+                    <label className="block text-xs font-bold mb-2">EXPIRES IN (HOURS)</label>
                     <input
                       type="number"
                       value={expiresInHours}
                       onChange={(e) => setExpiresInHours(Number(e.target.value))}
-                      className="input-brutal"
+                      className="input-brutal w-full"
                       min={1}
                       max={168}
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold" style={{ marginBottom: '0.5rem' }}>MAX USES</label>
+                    <label className="block text-xs font-bold mb-2">MAX USES</label>
                     <input
                       type="number"
                       value={maxUses}
                       onChange={(e) => setMaxUses(Number(e.target.value))}
-                      className="input-brutal"
+                      className="input-brutal w-full"
                       min={1}
                       max={100}
                       required
                     />
                   </div>
                 </div>
-                <button
-                  type="submit"
-                  disabled={creating}
-                  className="btn-brutal w-full"
-                  style={{ background: 'var(--success)', color: 'white' }}
-                >
+                <button type="submit" disabled={creating} className="btn-brutal w-full bg-success text-white py-3">
                   {creating ? 'CREATING...' : 'CREATE CODE'}
                 </button>
               </form>
             </div>
 
-            {/* Invite Codes List */}
-            <div className="card-brutal" style={{ padding: '0.875rem 1rem' }}>
-              <h2 className="text-sm font-black" style={{ marginBottom: '1rem', color: 'var(--purple)' }}>INVITE CODES ({inviteCodes.length})</h2>
-              
+            <div className="card-brutal p-4">
+              <h2 className="text-sm font-black text-purple mb-4">INVITE CODES ({inviteCodes.length})</h2>
+
               {inviteCodes.length === 0 ? (
-                <div className="text-center" style={{ padding: '2rem 0' }}>
-                  <p className="font-bold text-sm" style={{ color: 'var(--text-secondary)' }}>
+                <div className="text-center py-8">
+                  <p className="font-bold text-sm text-text-secondary">
                     No invite codes yet. Create one above.
                   </p>
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div className="flex flex-col gap-3">
                   {inviteCodes.map((code, idx) => (
                     <div
                       key={code.code}
-                      className="card-brutal"
-                      style={{
-                        background: code.isAvailable 
-                          ? idx % 4 === 0 
-                            ? 'var(--bg-card)' 
-                            : idx % 4 === 1 
-                              ? 'var(--bg-secondary)' 
-                              : idx % 4 === 2 
-                                ? 'var(--bg-success)' 
-                                : 'var(--bg-purple)'
-                          : 'var(--bg-main)',
-                        padding: '0.875rem 1rem',
-                        opacity: code.isAvailable ? 1 : 0.6,
-                      }}
+                      className={`card-brutal p-4 ${getCardBg(idx, code.isAvailable)} ${!code.isAvailable ? 'opacity-60' : ''}`}
                     >
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        <div className="flex items-center justify-between" style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
-                          <div className="flex items-center gap-2" style={{ flexWrap: 'wrap' }}>
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <code
                               className="font-black font-mono cursor-pointer hover:underline text-sm"
                               onClick={() => copyToClipboard(code.code)}
@@ -238,25 +200,19 @@ export default function AdminPage() {
                             >
                               {code.code}
                             </code>
-                            <span 
-                              className="badge-brutal text-xs" 
-                              style={{ 
-                                background: code.isAvailable ? 'var(--success)' : code.isExpired ? 'var(--warning)' : 'var(--error)', 
-                                color: 'white' 
-                              }}
-                            >
+                            <span className={`badge-brutal text-xs text-white ${code.isAvailable ? 'bg-success' : code.isExpired ? 'bg-warning' : 'bg-error'
+                              }`}>
                               {code.isAvailable ? 'ACTIVE' : code.isExpired ? 'EXPIRED' : 'USED UP'}
                             </span>
                           </div>
                           <button
                             onClick={() => handleDeleteCode(code.code)}
-                            className="btn-brutal"
-                            style={{ background: 'var(--error)', color: 'white', fontSize: '0.75rem', padding: '0.375rem 0.75rem', height: 'auto', minWidth: '60px' }}
+                            className="btn-brutal bg-error text-white text-xs py-1.5 px-3"
                           >
                             DELETE
                           </button>
                         </div>
-                        <div className="text-xs" style={{ color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <div className="text-xs text-text-secondary flex flex-col gap-1">
                           <span>Uses: <strong>{code.currentUses}/{code.maxUses}</strong></span>
                           <span>Expires: <strong>{format(new Date(code.expiresAt), 'MMM dd, HH:mm')}</strong></span>
                           <span>By: <strong>{code.createdByUsername}</strong></span>

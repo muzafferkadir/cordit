@@ -32,7 +32,6 @@ export default function Home() {
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Wait for AuthProvider to load user from localStorage
     const token = localStorage.getItem('token');
     if (!token) {
       router.push('/login');
@@ -145,7 +144,6 @@ export default function Home() {
 
   const handleToggleMute = () => {
     setMuteTrigger(prev => !prev);
-    // Toggle optimistically
     setIsMuted(prev => !prev);
   };
 
@@ -203,7 +201,6 @@ export default function Home() {
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Mobile Sidebar Modal */}
         <RoomsSidebar
           rooms={rooms}
           currentRoomId={currentRoom?._id || null}
@@ -214,7 +211,6 @@ export default function Home() {
           isMobile={true}
         />
 
-        {/* Desktop Sidebar */}
         <div className="hidden md:block">
           <RoomsSidebar
             rooms={rooms}
@@ -338,7 +334,6 @@ export default function Home() {
           )}
         </main>
 
-        {/* Desktop Voice Chat Sidebar */}
         {currentRoom && (
           <aside className="hidden md:flex h-full flex-col" style={{ background: 'var(--bg-secondary)', width: '320px', borderLeft: '3px solid black' }}>
             <VoiceChat />
@@ -346,7 +341,6 @@ export default function Home() {
         )}
       </div>
 
-      {/* Mobile Navigation */}
       <MobileNav
         isInVoice={isInVoice}
         isMuted={isMuted}
@@ -359,7 +353,6 @@ export default function Home() {
         connecting={connecting}
       />
 
-      {/* Mobile Voice Chat - Main View (Always visible on mobile when room selected) */}
       {currentRoom && (
         <div
           className="mobile-only md:hidden fixed"
@@ -387,7 +380,6 @@ export default function Home() {
         </div>
       )}
 
-      {/* Mobile Chat Modal - Opens on top of Voice */}
       {isChatOpen && currentRoom && (
         <div
           className="mobile-only md:hidden fixed flex flex-col"
@@ -400,7 +392,6 @@ export default function Home() {
             bottom: '60px',
           }}
         >
-          {/* Chat Header with Back Button */}
           <div className="gradient-purple" style={{ padding: '1rem 1.5rem', borderBottom: '3px solid black' }}>
             <div className="flex items-center gap-3">
               <button
@@ -417,7 +408,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Chat Messages */}
           <div className="flex-1 overflow-y-auto" style={{ background: 'var(--bg-secondary)', padding: '1rem' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {messages.map((msg, idx) => (
@@ -450,7 +440,6 @@ export default function Home() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Chat Input */}
           <form onSubmit={handleSendMessage} style={{ padding: '0.75rem 1rem', background: 'var(--bg-card)', borderTop: '3px solid black' }}>
             {typingUsers.length > 0 && (
               <div className="text-xs font-bold mb-2" style={{ color: 'var(--purple)' }}>

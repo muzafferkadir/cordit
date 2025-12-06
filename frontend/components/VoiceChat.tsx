@@ -157,7 +157,6 @@ function VoiceConnected({ onLeave, isMobile = false, externalMuteTrigger, onMute
   const { localParticipant } = useLocalParticipant();
   const prevMuteTrigger = useRef(externalMuteTrigger);
 
-  // Handle external mute trigger for mobile
   useEffect(() => {
     if (isMobile && prevMuteTrigger.current !== externalMuteTrigger && externalMuteTrigger !== undefined) {
       prevMuteTrigger.current = externalMuteTrigger;
@@ -172,7 +171,6 @@ function VoiceConnected({ onLeave, isMobile = false, externalMuteTrigger, onMute
     }
   }, [externalMuteTrigger, isMobile, localParticipant, onMuteStateChange]);
 
-  // Mobile version - just participants, no header/controls
   if (isMobile) {
     return (
       <>
@@ -182,7 +180,6 @@ function VoiceConnected({ onLeave, isMobile = false, externalMuteTrigger, onMute
     );
   }
 
-  // Desktop version - full UI
   return (
     <div className="h-full flex flex-col" style={{ background: 'var(--bg-secondary)' }}>
       <div className="gradient-purple" style={{ padding: '1rem 1.5rem', borderBottom: '3px solid black' }}>
@@ -267,11 +264,9 @@ export default function VoiceChat({
     onJoinStateChange?.(false);
   };
 
-  // Track previous trigger values
   const prevJoinTrigger = useRef(externalJoinTrigger);
   const prevLeaveTrigger = useRef(externalLeaveTrigger);
 
-  // Handle external join trigger
   useEffect(() => {
     if (prevJoinTrigger.current !== externalJoinTrigger && externalJoinTrigger !== undefined) {
       prevJoinTrigger.current = externalJoinTrigger;
@@ -281,7 +276,6 @@ export default function VoiceChat({
     }
   }, [externalJoinTrigger]);
 
-  // Handle external leave trigger  
   useEffect(() => {
     if (prevLeaveTrigger.current !== externalLeaveTrigger && externalLeaveTrigger !== undefined) {
       prevLeaveTrigger.current = externalLeaveTrigger;
@@ -291,7 +285,6 @@ export default function VoiceChat({
     }
   }, [externalLeaveTrigger]);
 
-  // Mobile mode - show waiting state if not joined
   if (isMobile && !isJoined) {
     return (
       <div style={{ padding: '1.5rem', textAlign: 'center' }}>
@@ -308,7 +301,6 @@ export default function VoiceChat({
     );
   }
 
-  // Not joined - show join button (desktop only)
   if (!isJoined && !isMobile) {
     return (
       <div className="h-full flex flex-col" style={{ background: 'var(--bg-secondary)' }}>
@@ -343,7 +335,6 @@ export default function VoiceChat({
     );
   }
 
-  // Joined - show LiveKit room
   if (livekitToken && livekitUrl) {
     return (
       <LiveKitRoom

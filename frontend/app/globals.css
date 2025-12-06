@@ -32,12 +32,73 @@
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+  /* Semantic Colors */
+  --color-primary: #06B6D4;
+  --color-primary-hover: #0891B2;
+  --color-secondary: #A855F7;
+  --color-secondary-hover: #9333EA;
+  --color-accent: #FFE66D;
+  --color-accent-hover: #FCD34D;
+
+  /* Status Colors */
+  --color-success: #4ADE80;
+  --color-success-bg: #DCFCE7;
+  --color-error: #FF6B6B;
+  --color-error-bg: #FEE2E2;
+  --color-warning: #FBBF24;
+  --color-warning-bg: #FEF3C7;
+  --color-info: #60A5FA;
+  --color-info-bg: #DBEAFE;
+
+  /* Brand Colors */
+  --color-purple: #A855F7;
+  --color-cyan: #06B6D4;
+  --color-pink: #EC4899;
+  --color-orange: #F97316;
+  --color-yellow: #FFE66D;
+
+  /* Background Colors */
+  --color-bg-main: #F5F5F0;
+  --color-bg-card: #FFFFFF;
+  --color-bg-secondary: #E0F2FE;
+  --color-bg-purple: #F3E8FF;
+  --color-bg-accent: #FFE66D;
+
+  /* Text Colors */
+  --color-text-primary: #000000;
+  --color-text-secondary: #525252;
+  --color-text-muted: #737373;
+  --color-text-inverse: #FFFFFF;
+
+  /* Border Colors */
+  --color-border: #000000;
+  --color-border-light: #E5E5E5;
+  --color-border-focus: #06B6D4;
+
+  /* Shadow */
+  --shadow-brutal: 4px 4px 0px 0px #000000;
+  --shadow-brutal-sm: 2px 2px 0px 0px #000000;
+  --shadow-brutal-lg: 6px 6px 0px 0px #000000;
+
+  /* Border Radius */
+  --radius-brutal: 0px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  /* Border Width */
+  --border-brutal: 3px;
+  --border-thin: 1px;
+  --border-medium: 2px;
+
+  /* Spacing */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+  --spacing-2xl: 3rem;
 }
 
 body {
@@ -51,7 +112,6 @@ body {
 /* Neobrutalism Button */
 .btn-brutal {
   position: relative;
-  padding: 0.625rem 1.25rem;
   font-weight: 700;
   border: 3px solid var(--border);
   background: var(--bg-card);
@@ -62,17 +122,14 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-size: 0.875rem;
-  height: 42px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 44px;
+  padding: 0.625rem 1.25rem;
 }
 
 @media (max-width: 767px) {
   .btn-brutal {
-    padding: 0.5rem 1rem;
-    height: 44px;
     font-size: 0.75rem;
     box-shadow: 3px 3px 0 var(--shadow);
   }
@@ -88,18 +145,15 @@ body {
   }
 }
 
-/* Card Brutal */
 .card-brutal {
   background: var(--bg-card);
   border: 3px solid var(--border);
   box-shadow: 6px 6px 0 var(--shadow);
-  padding: 1rem;
   position: relative;
 }
 
 @media (max-width: 767px) {
   .card-brutal {
-    padding: 0.75rem;
     box-shadow: 3px 3px 0 var(--shadow);
   }
 }
@@ -206,70 +260,12 @@ body {
   }
 }
 
-/* Force hide mobile elements on desktop */
 @media (min-width: 768px) {
   .mobile-only {
     display: none !important;
   }
 }
 
-/* Desktop defaults */
-.hidden-mobile {
-  display: none !important;
-}
-
-.show-mobile {
-  display: none !important;
-}
-
-/* Mobile overrides */
-@media (max-width: 767px) {
-
-  /* Hide on mobile */
-  .hidden-mobile {
-    display: none !important;
-  }
-
-  /* Show only on mobile */
-  .show-mobile {
-    display: block !important;
-  }
-
-  /* Mobile padding */
-  .px-mobile {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-
-  .py-mobile {
-    padding-top: 0.75rem;
-    padding-bottom: 0.75rem;
-  }
-
-  /* Mobile font sizes */
-  .text-sm-mobile {
-    font-size: 0.875rem;
-  }
-
-  .text-xs-mobile {
-    font-size: 0.75rem;
-  }
-}
-
-@media (min-width: 768px) {
-
-  /* Hide on desktop */
-  .show-mobile {
-    display: none !important;
-  }
-
-  /* Show on desktop */
-  .hidden-mobile {
-    display: flex !important;
-  }
-}
-
-/* Message Bubble */
 .message-bubble {
   position: relative;
   transition: all 0.2s ease;
