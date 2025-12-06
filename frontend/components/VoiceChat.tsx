@@ -30,8 +30,9 @@ function VoiceControls({ onLeave }: { onLeave: () => void }) {
 
     const audioTrack = localParticipant.getTrackPublication(Track.Source.Microphone);
     if (audioTrack) {
-      await localParticipant.setMicrophoneEnabled(audioTrack.isMuted);
-      setIsMuted(!audioTrack.isMuted);
+      const newMutedState = !audioTrack.isMuted;
+      await localParticipant.setMicrophoneEnabled(!newMutedState);
+      setIsMuted(newMutedState);
     }
   };
 
@@ -49,7 +50,7 @@ function VoiceControls({ onLeave }: { onLeave: () => void }) {
           onClick={toggleMute}
           className="btn-brutal flex-1"
           style={{
-            background: isMuted ? 'var(--error)' : 'var(--success)',
+            background: isMuted ? 'var(--success)' : 'var(--error)',
             color: 'white',
           }}
         >
