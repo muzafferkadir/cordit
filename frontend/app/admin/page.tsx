@@ -97,16 +97,16 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-surface">
-      <header className="gradient-yellow px-6 py-4 border-y-[3px] border-black">
+      <header className="gradient-purple px-6 py-4 border-y-[3px] border-black">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
-            <h1 className="text-xl font-black tracking-tight">ADMIN PANEL</h1>
-            <p className="text-xs font-bold mt-1 opacity-70">Manage invite codes</p>
+            <h1 className="text-xl font-black tracking-tight text-white">ADMIN PANEL</h1>
+            <p className="text-xs font-bold mt-1 text-white opacity-70">Manage invite codes</p>
           </div>
           <div className="hidden md:flex items-center gap-3">
-            <span className="badge-brutal bg-purple text-white">ADMIN</span>
+            <span className="badge-brutal bg-yellow text-dark">ADMIN</span>
             <span className="badge-brutal bg-cyan text-white">{user?.username}</span>
-            <button onClick={() => router.push('/')} className="btn-brutal bg-cyan text-white px-5 py-2">
+            <button onClick={() => router.push('/')} className="btn-brutal bg-yellow text-dark px-5 py-2">
               BACK TO CHAT
             </button>
             <button onClick={logout} className="btn-brutal bg-error text-white px-5 py-2">
@@ -114,7 +114,7 @@ export default function AdminPage() {
             </button>
           </div>
           <div className="flex md:hidden items-center gap-2">
-            <button onClick={() => router.push('/')} className="btn-brutal bg-cyan text-white h-9 px-3 text-xs">
+            <button onClick={() => router.push('/')} className="btn-brutal bg-yellow text-dark h-9 px-3 text-xs">
               BACK
             </button>
             <button onClick={logout} className="btn-brutal bg-error text-white h-9 px-3 text-xs">

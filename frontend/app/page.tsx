@@ -151,10 +151,16 @@ export default function Home() {
     setIsChatOpen(prev => !prev);
   };
 
+  const getMessageBg = (idx: number, isSystem: boolean): string => {
+    if (isSystem) return 'var(--bg-accent)';
+    const bgs = ['var(--bg-card)', 'var(--bg-secondary)', 'var(--bg-success)', 'var(--bg-purple)'];
+    return bgs[idx % 4];
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--bg-main)' }}>
-        <div className="text-2xl font-black">⏳ LOADING...</div>
+      <div className="min-h-screen flex items-center justify-center bg-surface">
+        <div className="text-2xl font-black">LOADING...</div>
       </div>
     );
   }
@@ -162,38 +168,38 @@ export default function Home() {
   if (!user) return null;
 
   return (
-    <div className="h-screen flex flex-col mobile-container" style={{ background: 'var(--bg-main)' }}>
-      <header className="gradient-yellow" style={{ padding: '1rem 1.5rem', borderTop: '3px solid black', borderBottom: '3px solid black' }}>
+    <div className="h-screen flex flex-col mobile-container bg-surface">
+      <header className="gradient-purple px-6 py-4 border-y-[3px] border-black">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="md:hidden">
               <HamburgerMenu onClose={() => setShowRoomsMenu(!showRoomsMenu)} />
             </div>
             <div>
-              <h1 className="text-xl font-black tracking-tight">LITECORD</h1>
-              <p className="text-xs font-bold mt-1" style={{ opacity: 0.7 }}>
+              <h1 className="text-xl font-black tracking-tight text-white">LITECORD</h1>
+              <p className="text-xs font-bold mt-1 text-white opacity-70">
                 {isConnected ? 'LIVE' : 'OFFLINE'}
               </p>
             </div>
           </div>
           <div className="hidden md:flex items-center gap-3">
-            <span className="badge-brutal" style={{ background: user.role === 'admin' ? 'var(--purple)' : 'var(--cyan)', color: 'white' }}>
+            <span className="badge-brutal bg-yellow text-dark">
               {user.username}
             </span>
             {user.role === 'admin' && (
-              <button onClick={() => router.push('/admin')} className="btn-brutal" style={{ background: 'var(--purple)', color: 'white' }}>
+              <button onClick={() => router.push('/admin')} className="btn-brutal bg-cyan text-white px-4 py-2">
                 INVITE CODES
               </button>
             )}
-            <button onClick={logout} className="btn-brutal" style={{ background: 'var(--error)', color: 'white' }}>
+            <button onClick={logout} className="btn-brutal bg-error text-white px-4 py-2">
               LOGOUT
             </button>
           </div>
           <div className="md:hidden flex items-center gap-3">
-            <span className="badge-brutal text-xs" style={{ background: user.role === 'admin' ? 'var(--purple)' : 'var(--cyan)', color: 'white', padding: '0.25rem 0.5rem', fontSize: '0.65rem' }}>
+            <span className="badge-brutal bg-yellow text-dark text-xs px-2 py-1">
               {user.username.slice(0, 5)}
             </span>
-            <button onClick={logout} className="btn-brutal" style={{ background: 'var(--error)', color: 'white', height: '36px', padding: '0.375rem 0.75rem', fontSize: '0.65rem' }}>
+            <button onClick={logout} className="btn-brutal bg-error text-white h-9 px-3 text-xs">
               OUT
             </button>
           </div>
@@ -221,22 +227,20 @@ export default function Home() {
           />
         </div>
 
-
-        <main className="flex-1 flex flex-col" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <main className="flex-1 flex flex-col pb-safe">
           {showCreateRoom ? (
-            <div className="flex-1 flex items-center justify-center" style={{ background: 'var(--bg-main)', padding: '1.5rem' }}>
-              <div className="text-center card-brutal" style={{ background: 'var(--bg-card)', padding: '2.5rem', maxWidth: '500px' }}>
-                <h2 className="text-3xl font-black mb-3" style={{ color: 'var(--cyan)' }}>CREATE NEW ROOM</h2>
-                <p className="font-bold text-lg mb-4" style={{ color: 'var(--text-secondary)' }}>
+            <div className="flex-1 flex items-center justify-center bg-surface p-6">
+              <div className="text-center card-brutal bg-card p-10 max-w-md">
+                <h2 className="text-3xl font-black mb-3 text-accent">CREATE NEW ROOM</h2>
+                <p className="font-bold text-lg mb-4 text-dim">
                   This feature is coming soon!
                 </p>
-                <p className="font-medium text-sm mb-6" style={{ color: 'var(--text-secondary)' }}>
+                <p className="font-medium text-sm mb-6 text-dim">
                   You'll be able to create custom rooms with voice chat support, set descriptions, and invite members.
                 </p>
                 <button
                   onClick={() => setShowCreateRoom(false)}
-                  className="btn-brutal"
-                  style={{ background: 'var(--cyan)', color: 'white' }}
+                  className="btn-brutal bg-accent text-dark px-6 py-3"
                 >
                   BACK TO CHAT
                 </button>
@@ -244,33 +248,21 @@ export default function Home() {
             </div>
           ) : currentRoom ? (
             <>
-              <div className="gradient-purple" style={{ padding: '1rem 1.5rem', borderBottom: '3px solid black' }}>
-                <h2 className="text-xl font-black text-white"># {currentRoom.name}</h2>
-                {currentRoom.description && <p className="text-xs mt-1 font-bold text-white opacity-80">{currentRoom.description}</p>}
+              <div className="gradient-yellow px-6 py-4 border-b-[3px] border-black">
+                <h2 className="text-xl font-black"># {currentRoom.name}</h2>
               </div>
 
-              <div className="flex-1 overflow-y-auto" style={{ background: 'var(--bg-secondary)', padding: '1.5rem' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div className="flex-1 overflow-y-auto bg-muted p-6">
+                <div className="flex flex-col gap-4">
                   {messages.map((msg, idx) => (
                     <div
                       key={msg._id}
-                      className="card-brutal"
-                      style={{
-                        background: msg.messageType === 'system'
-                          ? 'var(--bg-accent)'
-                          : idx % 4 === 0
-                            ? 'var(--bg-card)'
-                            : idx % 4 === 1
-                              ? 'var(--bg-secondary)'
-                              : idx % 4 === 2
-                                ? 'var(--bg-success)'
-                                : 'var(--bg-purple)',
-                        padding: '0.875rem 1rem',
-                      }}
+                      className="card-brutal p-4"
+                      style={{ background: getMessageBg(idx, msg.messageType === 'system') }}
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-black text-sm">{msg.username}</span>
-                        <span className="badge-brutal text-xs" style={{ background: 'var(--bg-card)' }}>
+                        <span className="badge-brutal text-xs bg-card">
                           {format(new Date(msg.createdAt), 'HH:mm')}
                         </span>
                       </div>
@@ -281,39 +273,29 @@ export default function Home() {
                 <div ref={messagesEndRef} />
               </div>
 
-              <form onSubmit={handleSendMessage} style={{ padding: '1rem 1.5rem', background: 'var(--bg-card)', borderTop: '3px solid black' }}>
+              <form onSubmit={handleSendMessage} className="px-6 py-4 bg-card border-t-[3px] border-black">
                 {typingUsers.length > 0 && (
-                  <div className="text-xs font-bold mb-2" style={{ color: 'var(--purple)' }}>
+                  <div className="text-xs font-bold mb-2 text-purple">
                     {typingUsers.length === 1
                       ? `${typingUsers[0]} is typing...`
                       : `${typingUsers.length} people are typing...`
                     }
                   </div>
                 )}
-                <div className="flex gap-3" style={{ flexDirection: window.innerWidth < 480 ? 'column' : 'row' }}>
+                <div className="flex gap-3">
                   <input
                     type="text"
                     value={messageText}
                     onChange={(e) => handleTyping(e.target.value)}
                     placeholder="Type your message..."
-                    className="input-brutal flex-1"
+                    className="input-brutal flex-1 bg-surface min-h-11"
                     maxLength={2000}
                     disabled={sendingMessage}
-                    style={{
-                      background: 'var(--bg-main)',
-                      minHeight: '44px',
-                      fontSize: '0.9375rem'
-                    }}
                   />
                   <button
                     type="submit"
                     disabled={sendingMessage || !messageText.trim()}
-                    className="btn-brutal"
-                    style={{
-                      background: messageText.trim() ? 'var(--success)' : 'var(--bg-main)',
-                      color: messageText.trim() ? 'white' : 'var(--text-secondary)',
-                      minWidth: '100px'
-                    }}
+                    className={`btn-brutal min-w-24 ${messageText.trim() ? 'bg-success text-white' : 'bg-gray-200 text-gray-500'}`}
                   >
                     {sendingMessage ? 'SENDING...' : 'SEND'}
                   </button>
@@ -321,21 +303,20 @@ export default function Home() {
               </form>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center" style={{ background: 'var(--bg-main)', padding: '1.5rem' }}>
+            <div className="flex-1 flex items-center justify-center bg-surface p-6">
               <div
-                className="text-center card-brutal cursor-pointer"
-                style={{ background: 'var(--bg-card)', padding: '2.5rem' }}
+                className="text-center card-brutal cursor-pointer bg-card p-10"
                 onClick={() => setShowRoomsMenu(true)}
               >
                 <h2 className="text-3xl font-black mb-3">SELECT A ROOM</h2>
-                <p className="font-bold text-lg" style={{ color: 'var(--text-secondary)' }}>Tap here to choose a room</p>
+                <p className="font-bold text-lg text-dim">Tap here to choose a room</p>
               </div>
             </div>
           )}
         </main>
 
         {currentRoom && (
-          <aside className="hidden md:flex h-full flex-col" style={{ background: 'var(--bg-secondary)', width: '320px', borderLeft: '3px solid black' }}>
+          <aside className="hidden md:flex h-full flex-col bg-muted w-80 border-l-[3px] border-black">
             <VoiceChat />
           </aside>
         )}
@@ -355,15 +336,14 @@ export default function Home() {
 
       {currentRoom && (
         <div
-          className="mobile-only md:hidden fixed"
+          className="mobile-only md:hidden fixed overflow-y-auto"
           style={{
             background: 'var(--bg-secondary)',
             zIndex: 20,
-            top: '70px',
+            top: '85px',
             left: 0,
             right: 0,
             bottom: '55px',
-            overflowY: 'auto',
           }}
         >
           <VoiceChat
@@ -392,44 +372,33 @@ export default function Home() {
             bottom: '60px',
           }}
         >
-          <div className="gradient-purple" style={{ padding: '1rem 1.5rem', borderBottom: '3px solid black' }}>
+          <div className="gradient-yellow px-6 py-4 border-b-[3px] border-black">
             <div className="flex items-center gap-3">
               <button
                 onClick={() => setIsChatOpen(false)}
-                className="btn-brutal"
-                style={{ background: 'var(--bg-card)', padding: '0.5rem 0.75rem' }}
+                className="btn-brutal px-3 py-2"
+                style={{ background: 'var(--bg-card)' }}
               >
-                ← BACK
+                BACK
               </button>
               <div>
-                <h2 className="text-xl font-black text-white"># {currentRoom.name}</h2>
-                {currentRoom.description && <p className="text-xs font-bold text-white opacity-80">{currentRoom.description}</p>}
+                <h2 className="text-xl font-black"># {currentRoom.name}</h2>
+                {currentRoom.description && <p className="text-xs font-bold opacity-80">{currentRoom.description}</p>}
               </div>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto" style={{ background: 'var(--bg-secondary)', padding: '1rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div className="flex-1 overflow-y-auto p-4" style={{ background: 'var(--bg-secondary)' }}>
+            <div className="flex flex-col gap-3">
               {messages.map((msg, idx) => (
                 <div
                   key={msg._id}
-                  className="card-brutal"
-                  style={{
-                    background: msg.messageType === 'system'
-                      ? 'var(--bg-accent)'
-                      : idx % 4 === 0
-                        ? 'var(--bg-card)'
-                        : idx % 4 === 1
-                          ? 'var(--bg-secondary)'
-                          : idx % 4 === 2
-                            ? 'var(--bg-success)'
-                            : 'var(--bg-purple)',
-                    padding: '0.75rem',
-                  }}
+                  className="card-brutal p-3"
+                  style={{ background: getMessageBg(idx, msg.messageType === 'system') }}
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-black text-xs">{msg.username}</span>
-                    <span className="badge-brutal text-xs" style={{ background: 'var(--bg-card)', fontSize: '0.6rem' }}>
+                    <span className="badge-brutal text-xs" style={{ background: 'var(--bg-card)' }}>
                       {format(new Date(msg.createdAt), 'HH:mm')}
                     </span>
                   </div>
@@ -440,7 +409,7 @@ export default function Home() {
             <div ref={messagesEndRef} />
           </div>
 
-          <form onSubmit={handleSendMessage} style={{ padding: '0.75rem 1rem', background: 'var(--bg-card)', borderTop: '3px solid black' }}>
+          <form onSubmit={handleSendMessage} className="px-4 py-3 border-t-[3px] border-black" style={{ background: 'var(--bg-card)' }}>
             {typingUsers.length > 0 && (
               <div className="text-xs font-bold mb-2" style={{ color: 'var(--purple)' }}>
                 {typingUsers.length === 1
@@ -455,25 +424,21 @@ export default function Home() {
                 value={messageText}
                 onChange={(e) => handleTyping(e.target.value)}
                 placeholder="Type your message..."
-                className="input-brutal flex-1"
+                className="input-brutal flex-1 min-h-11"
+                style={{ background: 'var(--bg-main)' }}
                 maxLength={2000}
                 disabled={sendingMessage}
-                style={{
-                  background: 'var(--bg-main)',
-                  minHeight: '44px',
-                  fontSize: '0.875rem'
-                }}
               />
               <button
                 type="submit"
                 disabled={sendingMessage || !messageText.trim()}
                 className="btn-brutal"
                 style={{
-                  background: messageText.trim() ? 'var(--success)' : 'var(--bg-main)',
-                  color: messageText.trim() ? 'white' : 'var(--text-secondary)',
+                  background: messageText.trim() ? 'var(--success)' : '#D1D5DB',
+                  color: messageText.trim() ? 'white' : '#6B7280',
                 }}
               >
-                {sendingMessage ? '...' : '→'}
+                {sendingMessage ? '...' : 'SEND'}
               </button>
             </div>
           </form>

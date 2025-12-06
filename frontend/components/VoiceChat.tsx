@@ -182,9 +182,9 @@ function VoiceConnected({ onLeave, isMobile = false, externalMuteTrigger, onMute
 
   return (
     <div className="h-full flex flex-col" style={{ background: 'var(--bg-secondary)' }}>
-      <div className="gradient-purple" style={{ padding: '1rem 1.5rem', borderBottom: '3px solid black' }}>
-        <h3 className="text-xl font-black text-white">VOICE CHAT</h3>
-        <p className="text-xs font-bold text-white opacity-80 mt-1">
+      <div className="gradient-yellow" style={{ padding: '1rem 1.5rem', borderBottom: '3px solid black' }}>
+        <h3 className="text-xl font-black">VOICE CHAT</h3>
+        <p className="text-xs font-bold opacity-80 mt-1">
           {currentRoom?.name}
         </p>
       </div>
@@ -304,11 +304,8 @@ export default function VoiceChat({
   if (!isJoined && !isMobile) {
     return (
       <div className="h-full flex flex-col" style={{ background: 'var(--bg-secondary)' }}>
-        <div className="gradient-purple" style={{ padding: '1rem 1.5rem', borderBottom: '3px solid black' }}>
-          <h3 className="text-xl font-black text-white">VOICE CHAT</h3>
-          <p className="text-xs font-bold text-white opacity-80 mt-1">
-            {currentRoom?.name}
-          </p>
+        <div className="gradient-yellow" style={{ padding: '1rem 1.5rem', borderBottom: '3px solid black' }}>
+          <h3 className="text-xl font-black">VOICE CHAT</h3>
         </div>
 
         <div className="flex-1 flex items-center justify-center" style={{ padding: '1.5rem' }}>
