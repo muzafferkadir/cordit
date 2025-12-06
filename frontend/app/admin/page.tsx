@@ -104,8 +104,7 @@ export default function AdminPage() {
             <p className="text-xs font-bold mt-1 text-white opacity-70">Manage invite codes</p>
           </div>
           <div className="hidden md:flex items-center gap-3">
-            <span className="badge-brutal bg-yellow text-dark">ADMIN</span>
-            <span className="badge-brutal bg-cyan text-white">{user?.username}</span>
+            <span className="badge-brutal bg-cyan text-white">ADMIN</span>
             <button onClick={() => router.push('/')} className="btn-brutal bg-yellow text-dark px-5 py-2">
               BACK TO CHAT
             </button>
@@ -139,7 +138,7 @@ export default function AdminPage() {
           )}
 
           <div className="flex flex-col gap-4">
-            <div className="card-brutal p-4">
+            <div className="card-brutal bg-card p-4">
               <h2 className="text-sm font-black text-cyan mb-4">CREATE INVITE CODE</h2>
               <form onSubmit={handleCreateCode}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
@@ -174,7 +173,7 @@ export default function AdminPage() {
               </form>
             </div>
 
-            <div className="card-brutal p-4">
+            <div className="card-brutal bg-card p-4">
               <h2 className="text-sm font-black text-purple mb-4">INVITE CODES ({inviteCodes.length})</h2>
 
               {inviteCodes.length === 0 ? (

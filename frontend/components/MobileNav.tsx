@@ -26,55 +26,30 @@ export default function MobileNav({
   const isJoinDisabled = !hasRoom || connecting;
 
   return (
-    <nav
-      className="mobile-only md:hidden flex fixed bottom-0 left-0 right-0"
-      style={{
-        background: 'var(--bg-card)',
-        justifyContent: 'center',
-        padding: 0,
-        zIndex: 50,
-      }}
-    >
+    <nav className="mobile-only md:hidden flex fixed bottom-0 left-0 right-0 w-full bg-card z-50 p-0 shadow-lg">
       {!isInVoice ? (
         <>
           <button
             onClick={onJoinVoice}
             disabled={isJoinDisabled}
-            style={{
-              flex: 1,
-              padding: '1rem 0.75rem',
-              background: isJoinDisabled ? 'var(--bg-main)' : 'var(--success)',
-              borderTop: '3px solid black',
-              borderBottom: '3px solid black',
-              borderLeft: '3px solid black',
-              borderRight: '1.5px solid var(--border)',
-              cursor: isJoinDisabled ? 'not-allowed' : 'pointer',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              fontSize: '0.75rem',
-              color: isJoinDisabled ? 'var(--text-secondary)' : 'white',
-              transition: 'all 0.15s ease',
-              opacity: isJoinDisabled ? 0.6 : 1,
-            }}
+            className={`
+              flex-1 py-4 px-3 font-bold uppercase text-xs transition-all duration-150 border-t-[3px] border-b-[3px] border-black
+              ${isJoinDisabled
+                ? 'bg-surface text-dim cursor-not-allowed border-r-[1.5px] opacity-60'
+                : 'bg-success text-white cursor-pointer border-r-[1.5px]'
+              }
+              border-l-[3px] border-l-black
+            `}
           >
             {connecting ? '...' : '🎤 JOIN VOICE'}
           </button>
           <button
             onClick={onToggleChat}
-            style={{
-              flex: 1,
-              padding: '1rem 0.75rem',
-              background: isChatOpen ? 'var(--bg-accent)' : 'var(--bg-card)',
-              borderTop: '3px solid black',
-              borderBottom: '3px solid black',
-              borderLeft: '1.5px solid var(--border)',
-              borderRight: '3px solid black',
-              cursor: 'pointer',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              fontSize: '0.75rem',
-              transition: 'all 0.15s ease',
-            }}
+            className={`
+              flex-1 py-4 px-3 font-bold uppercase text-xs transition-all duration-150 border-t-[3px] border-b-[3px] border-black
+              ${isChatOpen ? 'bg-yellow' : 'bg-card'}
+              text-dark cursor-pointer border-l-[1.5px] border-l-black border-r-[3px] border-r-black
+            `}
           >
             💬 CHAT
           </button>
@@ -83,60 +58,27 @@ export default function MobileNav({
         <>
           <button
             onClick={onLeaveVoice}
-            style={{
-              flex: 1,
-              padding: '1rem 0.75rem',
-              background: 'var(--warning)',
-              borderTop: '3px solid black',
-              borderBottom: '3px solid black',
-              borderLeft: '3px solid black',
-              borderRight: '1.5px solid var(--border)',
-              cursor: 'pointer',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              fontSize: '0.75rem',
-              color: 'white',
-              transition: 'all 0.15s ease',
-            }}
+            className="flex-1 py-4 px-3 font-bold uppercase text-xs text-white transition-all duration-150 border-t-[3px] border-b-[3px] border-black bg-warning border-l-[3px] border-l-black border-r-[1.5px] border-black cursor-pointer"
           >
             🚪 LEAVE
           </button>
           <button
             onClick={onToggleMute}
-            style={{
-              flex: 1,
-              padding: '1rem 0.75rem',
-              background: isMuted ? 'var(--error)' : 'var(--success)',
-              borderTop: '3px solid black',
-              borderBottom: '3px solid black',
-              borderLeft: '1.5px solid var(--border)',
-              borderRight: '1.5px solid var(--border)',
-              cursor: 'pointer',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              fontSize: '0.75rem',
-              color: 'white',
-              transition: 'all 0.15s ease',
-            }}
+            className={`
+              flex-1 py-4 px-3 font-bold uppercase text-xs text-white transition-all duration-150 border-t-[3px] border-b-[3px] border-black
+              ${isMuted ? 'bg-error' : 'bg-success'}
+              border-x-[1.5px] border-x-black cursor-pointer
+            `}
           >
             {isMuted ? '🔇 UNMUTE' : '🔊 MUTE'}
           </button>
           <button
             onClick={onToggleChat}
-            style={{
-              flex: 1,
-              padding: '1rem 0.75rem',
-              background: isChatOpen ? 'var(--bg-accent)' : 'var(--bg-card)',
-              borderTop: '3px solid black',
-              borderBottom: '3px solid black',
-              borderLeft: '1.5px solid var(--border)',
-              borderRight: '3px solid black',
-              cursor: 'pointer',
-              fontWeight: 700,
-              textTransform: 'uppercase',
-              fontSize: '0.75rem',
-              transition: 'all 0.15s ease',
-            }}
+            className={`
+              flex-1 py-4 px-3 font-bold uppercase text-xs transition-all duration-150 border-t-[3px] border-b-[3px] border-black
+              ${isChatOpen ? 'bg-yellow' : 'bg-card'}
+              text-dark cursor-pointer border-l-[1.5px] border-l-black border-r-[3px] border-r-black
+            `}
           >
             💬 CHAT
           </button>
