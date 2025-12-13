@@ -30,7 +30,7 @@ services:
     environment:
       DATABASE_URL: mongodb://mongo:27017/litecord
       LIVEKIT_API_URL: http://livekit:7880
-      LIVEKIT_URL: wss://livekit.${DOMAIN}
+      LIVEKIT_URL: ${LIVEKIT_URL}
       HOST: "0.0.0.0"
       PORT: "3000"
       ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET:-change-this-secret-in-production}
@@ -51,8 +51,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        NEXT_PUBLIC_BACKEND_URL: https://api.${DOMAIN}
-        NEXT_PUBLIC_LIVEKIT_URL: wss://livekit.${DOMAIN}
+        NEXT_PUBLIC_BACKEND_URL: ${BACKEND_URL}
+        NEXT_PUBLIC_LIVEKIT_URL: ${LIVEKIT_URL}
     depends_on:
       - backend
     environment:
