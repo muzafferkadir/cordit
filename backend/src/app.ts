@@ -45,6 +45,11 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
+// Health check endpoint for Docker
+app.get('/health', (_req: Request, res: Response) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 app.use('/user', userRoutes);
 app.use('/room', roomRoutes);
 app.use('/message', messageRoutes);
@@ -53,11 +58,11 @@ app.use('/invite', inviteCodeRoutes);
 // Initialize default data
 db.once('open', async () => {
   logger.info('MongoDB connected successfully');
-  
+
   if (process.env.CREATE_ADMIN_INITIALLY === 'true') {
     await createAdmin();
   }
-  
+
   await createDefaultRoom();
 });
 
