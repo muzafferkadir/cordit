@@ -5,7 +5,10 @@ import { io, Socket } from 'socket.io-client';
 import { useStore } from './store';
 import type { Message } from './types';
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+// Socket.io connects directly to backend (WebSocket can't be proxied via Next.js API routes)
+// In Docker: uses NEXT_PUBLIC_SOCKET_URL environment variable
+// Locally: uses localhost:3000
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3000';
 
 let globalSocket: Socket | null = null;
 let socketListenersAttached = false;
@@ -25,10 +28,10 @@ const getSocket = (token: string) => {
 
 export const useSocket = () => {
   const socketRef = useRef<Socket | null>(null);
-  const { 
-    user, 
-    currentRoom, 
-    addMessage, 
+  const {
+    user,
+    currentRoom,
+    addMessage,
     setConnected,
     addTypingUser,
     removeTypingUser,
@@ -74,7 +77,7 @@ export const useSocket = () => {
       });
 
       socket.on('error', (error: { message: string }) => {
-        console.error('❌ Socket error:', error.message);
+        console.error('Socket error:', error.message);
       });
     }
 

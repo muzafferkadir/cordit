@@ -5,6 +5,8 @@ services:
       MONGO_INITDB_DATABASE: litecord
     volumes:
       - mongo-data:/data/db
+    ports:
+      - "${MONGO_EXTERNAL_PORT:-27017}:27017"
     networks:
       - litecord-network
     restart: unless-stopped
@@ -15,10 +17,6 @@ services:
     environment:
       LIVEKIT_KEYS: "devkey: secret"
       UDP_PORT: 7882
-    ports:
-      - "${LIVEKIT_EXTERNAL_PORT:-7883}:7880"
-      - "7881:7881"
-      - "7882:7882/udp"
     networks:
       - litecord-network
     restart: unless-stopped
@@ -33,9 +31,10 @@ services:
     environment:
       - DATABASE_URL=mongodb://mongo:27017/litecord
       - LIVEKIT_API_URL=http://livekit:7880
-      - LIVEKIT_URL=${LIVEKIT_PUBLIC_URL:-ws://localhost:7883}
+      - LIVEKIT_URL=ws://livekit:7880
     ports:
-      - "${BACKEND_EXTERNAL_PORT:-5021}:3000"
+      # Socket.io needs direct access (WebSocket can't be proxied via Next.js API routes)
+      - "${BACKEND_SOCKET_PORT:-5021}:3000"
     networks:
       - litecord-network
     restart: unless-stopped
@@ -44,12 +43,14 @@ services:
     build:
       context: ./frontend
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5021}
-        NEXT_PUBLIC_LIVEKIT_URL: ${LIVEKIT_PUBLIC_URL:-ws://localhost:7883}
+        NEXT_PUBLIC_SOCKET_URL: ${NEXT_PUBLIC_SOCKET_URL:-http://localhost:5021}
     depends_on:
       - backend
     env_file:
       - .env
+    environment:
+      - BACKEND_INTERNAL_URL=http://backend:3000
+      - LIVEKIT_INTERNAL_URL=ws://livekit:7880
     ports:
       - "${FRONTEND_EXTERNAL_PORT:-3021}:3000"
     networks:
