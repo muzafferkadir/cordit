@@ -1,7 +1,7 @@
 {
-  "name": "express-blog-boilerplate",
+  "name": "litecord-backend",
   "version": "1.0.0",
-  "description": "Blog API boilerplate using Express.js",
+  "description": "Litecord - Lightweight Discord-like chat backend with real-time messaging and voice support",
   "main": "dist/app.js",
   "scripts": {
     "start": "node dist/app.js",
@@ -10,9 +10,20 @@
     "typecheck": "tsc --noEmit",
     "create-admin": "tsx src/utils/createAdmin.ts"
   },
-  "keywords": [],
+  "keywords": [
+    "chat",
+    "discord",
+    "voice",
+    "livekit",
+    "socket.io",
+    "real-time"
+  ],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/litecord.git"
+  },
   "dependencies": {
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",

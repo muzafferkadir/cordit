@@ -1,12 +1,26 @@
 {
-  "name": "frontend",
-  "version": "0.1.0",
+  "name": "litecord-frontend",
+  "version": "1.0.0",
+  "description": "Litecord - Lightweight Discord-like chat frontend with real-time messaging and voice support",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
+  },
+  "keywords": [
+    "chat",
+    "discord",
+    "voice",
+    "livekit",
+    "next.js",
+    "real-time"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/litecord.git"
   },
   "dependencies": {
     "@livekit/components-react": "^2.9.16",
