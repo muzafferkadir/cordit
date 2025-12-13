@@ -1,6 +1,14 @@
-version: '3.8'
-
 services:
+  mongo:
+    image: mongo:latest
+    environment:
+      MONGO_INITDB_DATABASE: litecord
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - litecord-network
+    restart: unless-stopped
+
   livekit:
     image: livekit/livekit-server:latest
     command: --dev
@@ -8,7 +16,49 @@ services:
       LIVEKIT_KEYS: "devkey: secret"
       UDP_PORT: 7882
     ports:
-      - "7880:7880"   # HTTP / WebSocket API (use ws://localhost:7880 for clients)
-      - "7881:7881"   # Web UI / metrics
-      - "7882:7882/udp" # RTP/RTCP media
+      - "${LIVEKIT_EXTERNAL_PORT:-7883}:7880"
+      - "7881:7881"
+      - "7882:7882/udp"
+    networks:
+      - litecord-network
     restart: unless-stopped
+
+  backend:
+    build: ./backend
+    depends_on:
+      - mongo
+      - livekit
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=mongodb://mongo:27017/litecord
+      - LIVEKIT_API_URL=http://livekit:7880
+      - LIVEKIT_URL=${LIVEKIT_PUBLIC_URL:-ws://localhost:7883}
+    ports:
+      - "${BACKEND_EXTERNAL_PORT:-5021}:3000"
+    networks:
+      - litecord-network
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:5021}
+        NEXT_PUBLIC_LIVEKIT_URL: ${LIVEKIT_PUBLIC_URL:-ws://localhost:7883}
+    depends_on:
+      - backend
+    env_file:
+      - .env
+    ports:
+      - "${FRONTEND_EXTERNAL_PORT:-3021}:3000"
+    networks:
+      - litecord-network
+    restart: unless-stopped
+
+networks:
+  litecord-network:
+    driver: bridge
+
+volumes:
+  mongo-data:
