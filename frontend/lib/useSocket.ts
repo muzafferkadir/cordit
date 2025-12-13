@@ -5,10 +5,9 @@ import { io, Socket } from 'socket.io-client';
 import { useStore } from './store';
 import type { Message } from './types';
 
-// Socket.io connects directly to backend (WebSocket can't be proxied via Next.js API routes)
-// In Docker: uses NEXT_PUBLIC_SOCKET_URL environment variable
-// Locally: uses localhost:3000
-const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3000';
+// Socket.io connects to backend public URL (for browser access)
+// Uses NEXT_PUBLIC_BACKEND_URL from environment
+const SOCKET_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:3000';
 
 let globalSocket: Socket | null = null;
 let socketListenersAttached = false;
@@ -69,7 +68,6 @@ export const useSocket = () => {
       socket.on('user_typing', (data: { username: string; isTyping: boolean }) => {
         if (data.isTyping) {
           addTypingUser(data.username);
-          // Auto-remove after 3 seconds
           setTimeout(() => removeTypingUser(data.username), 3000);
         } else {
           removeTypingUser(data.username);
