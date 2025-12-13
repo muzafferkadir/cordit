@@ -45,11 +45,6 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// Health check endpoint for Docker
-app.get('/health', (_req: Request, res: Response) => {
-  res.status(200).json({ status: 'ok' });
-});
-
 app.use('/user', userRoutes);
 app.use('/room', roomRoutes);
 app.use('/message', messageRoutes);

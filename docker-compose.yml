@@ -8,11 +8,6 @@ services:
       - mongo-data:/data/db
     networks:
       - litecord-network
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     restart: unless-stopped
 
   livekit:
@@ -25,11 +20,6 @@ services:
       - "7880"
     networks:
       - litecord-network
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:7880"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     restart: unless-stopped
 
   backend:
@@ -38,17 +28,12 @@ services:
       dockerfile: Dockerfile
     container_name: litecord-backend
     depends_on:
-      mongo:
-        condition: service_healthy
-      livekit:
-        condition: service_healthy
+      - mongo
+      - livekit
     environment:
-      # Internal URLs (Docker network)
       DATABASE_URL: mongodb://mongo:27017/litecord
       LIVEKIT_API_URL: http://livekit:7880
-      # Public URL (sent to browser for WebSocket)
       LIVEKIT_URL: ${LIVEKIT_URL:-wss://litecord-kit.mkdir.online}
-      # App config
       HOST: "0.0.0.0"
       PORT: "3000"
       ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
@@ -62,12 +47,6 @@ services:
       - "3000"
     networks:
       - litecord-network
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
     restart: unless-stopped
 
   frontend:
@@ -79,21 +58,13 @@ services:
         NEXT_PUBLIC_LIVEKIT_URL: ${LIVEKIT_URL:-wss://litecord-kit.mkdir.online}
     container_name: litecord-frontend
     depends_on:
-      backend:
-        condition: service_healthy
+      - backend
     environment:
-      # Internal URL for API proxy
       BACKEND_INTERNAL_URL: http://backend:3000
     expose:
       - "3000"
     networks:
       - litecord-network
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
     restart: unless-stopped
 
 networks:
