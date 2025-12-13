@@ -1,7 +1,6 @@
 services:
   mongo:
     image: mongo:7
-    container_name: litecord-mongo
     environment:
       MONGO_INITDB_DATABASE: litecord
     volumes:
@@ -12,7 +11,6 @@ services:
 
   livekit:
     image: livekit/livekit-server:latest
-    container_name: litecord-livekit
     command: --dev
     environment:
       LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-devkey}: ${LIVEKIT_API_SECRET:-secret}"
@@ -26,7 +24,6 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: litecord-backend
     depends_on:
       - mongo
       - livekit
@@ -56,7 +53,6 @@ services:
       args:
         NEXT_PUBLIC_BACKEND_URL: ${BACKEND_URL:-https://litecord-api.mkdir.online}
         NEXT_PUBLIC_LIVEKIT_URL: ${LIVEKIT_URL:-wss://litecord-kit.mkdir.online}
-    container_name: litecord-frontend
     depends_on:
       - backend
     environment:
