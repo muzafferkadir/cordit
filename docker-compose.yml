@@ -1,6 +1,6 @@
 services:
   mongo:
-    image: mongo:7
+    image: mongo:latest
     environment:
       MONGO_INITDB_DATABASE: litecord
     volumes:
