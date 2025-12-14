@@ -45,7 +45,8 @@ BACKEND_URL=https://api.cordit.example.com
 LIVEKIT_URL=wss://livekit.cordit.example.com
 
 # Security (CHANGE THESE!)
-ACCESS_TOKEN_SECRET=your-super-secret-key-here
+ACCESS_TOKEN_SECRET=your-super-secret-key-min-32-characters
+ALLOWED_ORIGINS=https://cordit.example.com
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=your-secure-password
 ```
@@ -80,7 +81,8 @@ docker compose up -d --build
 | `FRONTEND_URL` | Public URL for the frontend | Required |
 | `BACKEND_URL` | Public URL for the API | Required |
 | `LIVEKIT_URL` | WebSocket URL for voice chat | Required |
-| `ACCESS_TOKEN_SECRET` | JWT signing secret | Required |
+| `ACCESS_TOKEN_SECRET` | JWT signing secret (min 32 chars) | Required |
+| `ALLOWED_ORIGINS` | CORS allowed origins (comma-separated) | `*` |
 | `ADMIN_USERNAME` | Initial admin username | `admin` |
 | `ADMIN_PASSWORD` | Initial admin password | `admin123` |
 | `INVITE_CODE_EXPIRY_HOURS` | Invite code validity | `24` |
@@ -177,10 +179,12 @@ Add reverse proxy labels or configuration for each service subdomain.
 
 ## 🔒 Security Notes
 
-1. **Change default secrets** - Never use default `ACCESS_TOKEN_SECRET` in production
+1. **JWT Secret** - `ACCESS_TOKEN_SECRET` must be at least 32 characters
 2. **Change admin password** - Update `ADMIN_PASSWORD` immediately
-3. **Use HTTPS** - Always deploy behind SSL/TLS
-4. **LiveKit DNS-only** - If using Cloudflare, set LiveKit subdomain to "DNS only" (not proxied) for WebSocket compatibility
+3. **Configure CORS** - Set `ALLOWED_ORIGINS` to your frontend domain in production
+4. **Use HTTPS** - Always deploy behind SSL/TLS
+5. **Rate Limiting** - Built-in protection against brute-force attacks
+6. **LiveKit DNS-only** - If using Cloudflare, set LiveKit subdomain to "DNS only" (not proxied) for WebSocket compatibility
 
 ## 🤝 Contributing
 
