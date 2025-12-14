@@ -10,15 +10,15 @@ declare global {
     }
 
     interface Response {
-      sendError: (statusCode?: number, data?: any) => void;
-      sendResponse: (statusCode?: number, data?: any) => void;
+      sendError: (statusCode?: number, data?: unknown) => void;
+      sendResponse: (statusCode?: number, data?: unknown) => void;
     }
   }
 }
 
 export interface CustomResponse extends Response {
-  sendError: (statusCode?: number, data?: any) => void;
-  sendResponse: (statusCode?: number, data?: any) => void;
+  sendError: (statusCode?: number, data?: unknown) => void;
+  sendResponse: (statusCode?: number, data?: unknown) => void;
 }
 
 export interface CustomRequest extends Request {

@@ -34,6 +34,6 @@ export enum WebSocketEventType {
 export interface WebSocketEvent {
   type: WebSocketEventType;
   roomId: string;
-  data: any;
+  data: unknown;
   timestamp: Date;
 }

@@ -1,20 +1,26 @@
 import { errorLogger, logger } from '../utils/logger';
 import { CustomRequest, CustomResponse } from '../types/express';
 
+interface MongoError {
+  code?: number;
+  message?: string;
+}
+
 const errorHandler = (
   _req: CustomRequest,
   res: CustomResponse,
   statusCode: number = 500,
-  data: any = {},
+  data: unknown = {},
 ): void => {
   try {
-    let responseData = data;
+    let responseData: unknown = data;
 
-    if (typeof responseData !== 'object') {
+    if (typeof responseData !== 'object' || responseData === null) {
       responseData = { message: responseData };
     }
 
-    if (responseData?.code === 11000 || responseData?.code === 11001 || responseData?.code === 12582) {
+    const mongoError = responseData as MongoError;
+    if (mongoError?.code === 11000 || mongoError?.code === 11001 || mongoError?.code === 12582) {
       statusCode = 409;
       responseData = { message: 'This record is already exist.' };
     }

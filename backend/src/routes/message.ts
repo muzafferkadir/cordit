@@ -20,7 +20,6 @@ router.post('/', verifyToken, validator(sendMessage), async (req: Request, res: 
       return;
     }
 
-    // Get user from database to get ObjectId
     const User = (await import('../models/user')).default;
     const user = await User.findOne({ username });
     if (!user) {
@@ -28,14 +27,12 @@ router.post('/', verifyToken, validator(sendMessage), async (req: Request, res: 
       return;
     }
 
-    // Check if room exists and is not deleted
     const room = await Room.findOne({ _id: roomId, isDeleted: false });
     if (!room) {
       res.sendError(404, 'Room not found');
       return;
     }
 
-    // Check if user is in the room
     const isUserInRoom = room.activeUsers.some(
       (u) => u.username === username,
     );
@@ -45,7 +42,6 @@ router.post('/', verifyToken, validator(sendMessage), async (req: Request, res: 
       return;
     }
 
-    // Create message
     const message = new Message({
       roomId,
       userId: user._id,
@@ -68,7 +64,6 @@ router.get('/room/:roomId', verifyToken, async (req: Request, res: Response) => 
     const { roomId } = req.params;
     const { page = 1, limit = 50 } = req.query;
 
-    // Check if room exists and is not deleted
     const room = await Room.findOne({ _id: roomId, isDeleted: false });
     if (!room) {
       res.sendError(404, 'Room not found');
@@ -85,7 +80,6 @@ router.get('/room/:roomId', verifyToken, async (req: Request, res: Response) => 
     const totalMessages = await Message.countDocuments({ roomId, isDeleted: false });
     const totalPages = Math.ceil(totalMessages / Number(limit));
 
-    // Reverse to show oldest first
     const orderedMessages = messages.reverse();
 
     res.sendResponse(200, {
@@ -108,7 +102,6 @@ router.get('/', verifyToken, validator(getMessages, 'query'), async (req: Reques
   try {
     const { roomId, page = 1, limit = 50 } = req.query;
 
-    // Check if room exists and is not deleted
     const room = await Room.findOne({ _id: roomId as string, isDeleted: false });
     if (!room) {
       res.sendError(404, 'Room not found');
@@ -125,7 +118,6 @@ router.get('/', verifyToken, validator(getMessages, 'query'), async (req: Reques
     const totalMessages = await Message.countDocuments({ roomId, isDeleted: false });
     const totalPages = Math.ceil(totalMessages / Number(limit));
 
-    // Reverse to show oldest first
     const orderedMessages = messages.reverse();
 
     res.sendResponse(200, {
@@ -167,21 +159,22 @@ router.delete('/:id', verifyToken, async (req: Request, res: Response) => {
       return;
     }
 
-    const userId = req.user?.username;
+    const username = req.user?.username;
     const isAdmin = req.user?.role === 'admin';
 
-    // Check if user owns the message or is admin
-    if (message.username !== userId && !isAdmin) {
+    if (message.username !== username && !isAdmin) {
       res.sendError(403, 'You can only delete your own messages');
       return;
     }
 
-    // Soft delete the message
+    const User = (await import('../models/user')).default;
+    const user = await User.findOne({ username });
+
     message.isDeleted = true;
     message.deletedAt = new Date();
-    message.deletedBy = req.user?.username as any;
+    message.deletedBy = user?._id;
     await message.save();
-    
+
     res.sendResponse(200, 'Message deleted successfully');
   } catch (error) {
     res.sendError(500, error);

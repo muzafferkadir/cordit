@@ -36,19 +36,19 @@ export const initializeSocket = (httpServer: HTTPServer) => {
   io.use(async (socket: AuthenticatedSocket, next) => {
     try {
       const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
-      
+
       if (!token) {
         return next(new Error('Authentication error: No token provided'));
       }
 
       const secret = process.env.ACCESS_TOKEN_SECRET || '';
       const decoded = jwt.verify(token, secret) as { username: string; role: string };
-      
+
       socket.userId = decoded.username; // We're using username as ID for now
       socket.username = decoded.username;
-      
+
       next();
-    } catch (error) {
+    } catch {
       next(new Error('Authentication error: Invalid token'));
     }
   });
@@ -60,7 +60,7 @@ export const initializeSocket = (httpServer: HTTPServer) => {
     socket.on('join_room', async (data: JoinRoomData) => {
       try {
         const { roomId } = data;
-        
+
         const room = await Room.findOne({ _id: roomId, isDeleted: false });
         if (!room) {
           socket.emit('error', { message: 'Room not found' });
@@ -69,15 +69,15 @@ export const initializeSocket = (httpServer: HTTPServer) => {
 
         // Join socket room
         socket.join(roomId);
-        
+
         logger.info(`${socket.username} joined room ${room.name}`);
-        
+
         // Broadcast to room that user joined
         io.to(roomId).emit('user_joined', {
           username: socket.username,
           timestamp: new Date(),
         });
-        
+
         socket.emit('joined_room', {
           roomId,
           roomName: room.name,
@@ -92,11 +92,11 @@ export const initializeSocket = (httpServer: HTTPServer) => {
     socket.on('leave_room', async (data: JoinRoomData) => {
       try {
         const { roomId } = data;
-        
+
         socket.leave(roomId);
-        
+
         logger.info(`${socket.username} left room ${roomId}`);
-        
+
         // Broadcast to room that user left
         io.to(roomId).emit('user_left', {
           username: socket.username,
@@ -111,7 +111,7 @@ export const initializeSocket = (httpServer: HTTPServer) => {
     socket.on('send_message', async (data: SendMessageData) => {
       try {
         const { roomId, text } = data;
-        
+
         if (!text || text.trim().length === 0) {
           socket.emit('error', { message: 'Message text is required' });
           return;

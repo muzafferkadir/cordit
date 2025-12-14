@@ -22,7 +22,7 @@ router.get('/', verifyToken, async (_req: Request, res: Response) => {
         const activeUserCount = await Room.findById(room._id)
           .select('activeUsers')
           .then((r) => r?.activeUsers.length || 0);
-        
+
         return {
           ...room.toObject(),
           activeUserCount,
@@ -106,7 +106,7 @@ router.put('/:id', verifyToken, checkRoles('admin'), validator(updateRoom), asyn
     }
 
     const { name, description, maxUsers } = req.body;
-    
+
     if (name && name !== room.name) {
       const existingRoom = await Room.findOne({ name, isDeleted: false });
       if (existingRoom) {
@@ -140,12 +140,17 @@ router.delete('/:id', verifyToken, checkRoles('admin'), async (req: Request, res
       return;
     }
 
+    // Get user from database to get ObjectId
+    const username = req.user?.username;
+    const User = (await import('../models/user')).default;
+    const user = await User.findOne({ username });
+
     // Soft delete the room
     room.isDeleted = true;
     room.deletedAt = new Date();
-    room.deletedBy = req.user?.username as any;
+    room.deletedBy = user?._id;
     await room.save();
-    
+
     // Delete LiveKit room
     if (room.livekitRoomName) {
       try {
@@ -154,19 +159,19 @@ router.delete('/:id', verifyToken, checkRoles('admin'), async (req: Request, res
         console.error('Error deleting LiveKit room:', error);
       }
     }
-    
+
     // Soft delete all messages in the room
     await Message.updateMany(
       { roomId: room._id, isDeleted: false },
-      { 
-        $set: { 
-          isDeleted: true, 
+      {
+        $set: {
+          isDeleted: true,
           deletedAt: new Date(),
-          deletedBy: req.user?.username as any,
+          deletedBy: user?._id,
         },
       },
     );
-    
+
     res.sendResponse(200, 'Room deleted successfully');
   } catch (error) {
     res.sendError(500, error);
@@ -242,9 +247,9 @@ router.post('/:id/join', verifyToken, async (req: Request, res: Response) => {
           console.error('Error creating LiveKit token:', error);
         }
       }
-      
-      res.sendResponse(200, { 
-        message: 'Already in room', 
+
+      res.sendResponse(200, {
+        message: 'Already in room',
         room,
         livekitToken,
         livekitUrl,
@@ -296,8 +301,8 @@ router.post('/:id/join', verifyToken, async (req: Request, res: Response) => {
     });
     await systemMessage.save();
 
-    res.sendResponse(200, { 
-      message: 'Joined room successfully', 
+    res.sendResponse(200, {
+      message: 'Joined room successfully',
       room,
       livekitToken,
       livekitUrl,

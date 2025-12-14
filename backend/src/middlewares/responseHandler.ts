@@ -4,7 +4,7 @@ import { CustomResponse } from '../types/express';
 const responseHandler = (
   res: CustomResponse,
   statusCode: number = 200,
-  data: any = {},
+  data: unknown = {},
 ): void => {
   try {
     let responseData = data;

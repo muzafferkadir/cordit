@@ -25,7 +25,7 @@ const verifyToken = async (
     const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
     req.user = decoded;
     next();
-  } catch (err) {
+  } catch {
     (res as CustomResponse).sendError(401, 'Unauthorized access: Invalid token');
   }
 };
