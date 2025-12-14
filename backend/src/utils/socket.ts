@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import Room from '../models/room';
 import Message from '../models/message';
 import { logger } from './logger';
+import { config } from '../config';
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -26,7 +27,7 @@ interface TypingData {
 export const initializeSocket = (httpServer: HTTPServer) => {
   const io = new SocketIOServer(httpServer, {
     cors: {
-      origin: '*',
+      origin: config.allowedOrigins,
       methods: ['GET', 'POST'],
       credentials: true,
     },
@@ -41,8 +42,7 @@ export const initializeSocket = (httpServer: HTTPServer) => {
         return next(new Error('Authentication error: No token provided'));
       }
 
-      const secret = process.env.ACCESS_TOKEN_SECRET || '';
-      const decoded = jwt.verify(token, secret) as { username: string; role: string };
+      const decoded = jwt.verify(token, config.jwtSecret) as { username: string; role: string };
 
       socket.userId = decoded.username; // We're using username as ID for now
       socket.username = decoded.username;

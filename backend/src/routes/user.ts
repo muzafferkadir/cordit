@@ -6,11 +6,9 @@ import User from '../models/user';
 import InviteCode from '../models/inviteCode';
 import validator from '../middlewares/validator';
 import { login, register } from '../validators/user';
+import { config } from '../config';
 
 const router: Router = express.Router();
-
-const JWT_SECRET = process.env.ACCESS_TOKEN_SECRET || '';
-const EXPIRATION = '2h';
 
 router.post('/login', validator(login), async (req: Request, res: Response) => {
   try {
@@ -30,11 +28,11 @@ router.post('/login', validator(login), async (req: Request, res: Response) => {
 
     const token = jwt.sign(
       { username: user.username, role: user.role },
-      JWT_SECRET,
-      { expiresIn: EXPIRATION },
+      config.jwtSecret,
+      { expiresIn: '2h' },
     );
 
-    res.sendResponse(200, { 
+    res.sendResponse(200, {
       token,
       username: user.username,
       role: user.role
@@ -57,8 +55,8 @@ router.post('/register', validator(register), async (req: Request, res: Response
     }
 
     // Validate invite code
-    const invite = await InviteCode.findOne({ 
-      code: inviteCode.toUpperCase(), 
+    const invite = await InviteCode.findOne({
+      code: inviteCode.toUpperCase(),
       isDeleted: false,
     });
 
@@ -68,7 +66,7 @@ router.post('/register', validator(register), async (req: Request, res: Response
     }
 
     const now = new Date();
-    
+
     if (invite.expiresAt < now) {
       res.sendError(400, 'Invite code has expired');
       return;
@@ -96,22 +94,22 @@ router.post('/register', validator(register), async (req: Request, res: Response
     if (invite.currentUses >= invite.maxUses) {
       invite.isUsed = true;
     }
-    
+
     // Store last user info (for tracking)
     invite.usedBy = newUser._id;
     invite.usedByUsername = username;
     invite.usedAt = now;
-    
+
     await invite.save();
 
     // Generate token for new user
     const token = jwt.sign(
       { username: newUser.username, role: newUser.role },
-      JWT_SECRET,
-      { expiresIn: EXPIRATION },
+      config.jwtSecret,
+      { expiresIn: '2h' },
     );
 
-    res.sendResponse(201, { 
+    res.sendResponse(201, {
       message: 'User registered successfully',
       token,
       username: newUser.username,

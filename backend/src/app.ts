@@ -5,6 +5,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import mongoose from 'mongoose';
+import { config } from './config';
 import errorHandler from './middlewares/errorHandler';
 import responseHandler from './middlewares/responseHandler';
 import userRoutes from './routes/user';
@@ -15,12 +16,6 @@ import createAdmin from './utils/createAdmin';
 import createDefaultRoom from './utils/createDefaultRoom';
 import { logger } from './utils/logger';
 import { initializeSocket } from './utils/socket';
-
-const JWT_SECRET = process.env.ACCESS_TOKEN_SECRET;
-if (!JWT_SECRET || JWT_SECRET.length < 32) {
-  logger.error('FATAL: ACCESS_TOKEN_SECRET is missing or too short (min 32 chars). Exiting.');
-  process.exit(1);
-}
 
 const app: Application = express();
 const httpServer = createServer(app);
@@ -58,15 +53,11 @@ app.use((_req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-const mongoDB = process.env.DATABASE_URL || '';
+const mongoDB = config.databaseUrl;
 mongoose.connect(mongoDB);
 
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'MongoDB connection error:'));
-
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
-  : ['http://localhost:3000', 'http://localhost:3001'];
 
 const corsOptions = {
   origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
@@ -74,7 +65,7 @@ const corsOptions = {
       callback(null, true);
       return;
     }
-    if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+    if (config.allowedOrigins.includes(origin) || config.allowedOrigins.includes('*')) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS'));
@@ -100,7 +91,7 @@ app.use('/invite', inviteCodeRoutes);
 db.once('open', async () => {
   logger.info('MongoDB connected successfully');
 
-  if (process.env.CREATE_ADMIN_INITIALLY === 'true') {
+  if (config.admin.createInitially) {
     await createAdmin();
   }
 
@@ -109,13 +100,13 @@ db.once('open', async () => {
 
 const io = initializeSocket(httpServer);
 
-const HOST = process.env.HOST || 'localhost';
-const PORT = process.env.PORT || 3000;
+const HOST = config.host;
+const PORT = config.port;
 
 httpServer.listen(PORT, () => {
   logger.info(`Server running at http://${HOST}:${PORT}/`);
   logger.info('Socket.io initialized');
-  logger.info(`CORS allowed origins: ${allowedOrigins.join(', ')}`);
+  logger.info(`CORS allowed origins: ${config.allowedOrigins.join(', ')}`);
 });
 
 export default app;

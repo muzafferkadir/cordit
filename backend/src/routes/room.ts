@@ -4,6 +4,7 @@ import validator from '../middlewares/validator';
 import verifyToken from '../middlewares/verifyToken';
 import checkRoles from '../middlewares/checkRoles';
 import { createRoom, updateRoom } from '../validators/room';
+import { mongoIdSchema } from '../validators/params';
 import Room from '../models/room';
 import Message from '../models/message';
 import { createLiveKitToken, createLiveKitRoom, deleteLiveKitRoom, getLiveKitRoom } from '../utils/livekit';
@@ -37,7 +38,7 @@ router.get('/', verifyToken, async (_req: Request, res: Response) => {
 });
 
 // Get room by ID with details
-router.get('/:id', verifyToken, async (req: Request, res: Response) => {
+router.get('/:id', verifyToken, validator(mongoIdSchema, 'params'), async (req: Request, res: Response) => {
   try {
     const room = await Room.findOne({ _id: req.params.id, isDeleted: false });
     if (!room) {
@@ -92,7 +93,7 @@ router.post('/', verifyToken, checkRoles('admin'), validator(createRoom), async 
 });
 
 // Update room (admin only)
-router.put('/:id', verifyToken, checkRoles('admin'), validator(updateRoom), async (req: Request, res: Response) => {
+router.put('/:id', verifyToken, checkRoles('admin'), validator(mongoIdSchema, 'params'), validator(updateRoom), async (req: Request, res: Response) => {
   try {
     const room = await Room.findOne({ _id: req.params.id, isDeleted: false });
     if (!room) {
@@ -127,7 +128,7 @@ router.put('/:id', verifyToken, checkRoles('admin'), validator(updateRoom), asyn
 });
 
 // Delete room (admin only - soft delete)
-router.delete('/:id', verifyToken, checkRoles('admin'), async (req: Request, res: Response) => {
+router.delete('/:id', verifyToken, checkRoles('admin'), validator(mongoIdSchema, 'params'), async (req: Request, res: Response) => {
   try {
     const room = await Room.findOne({ _id: req.params.id, isDeleted: false });
     if (!room) {
@@ -179,7 +180,7 @@ router.delete('/:id', verifyToken, checkRoles('admin'), async (req: Request, res
 });
 
 // Join room
-router.post('/:id/join', verifyToken, async (req: Request, res: Response) => {
+router.post('/:id/join', verifyToken, validator(mongoIdSchema, 'params'), async (req: Request, res: Response) => {
   try {
     const room = await Room.findOne({ _id: req.params.id, isDeleted: false });
     if (!room) {
@@ -313,7 +314,7 @@ router.post('/:id/join', verifyToken, async (req: Request, res: Response) => {
 });
 
 // Leave room
-router.post('/:id/leave', verifyToken, async (req: Request, res: Response) => {
+router.post('/:id/leave', verifyToken, validator(mongoIdSchema, 'params'), async (req: Request, res: Response) => {
   try {
     const room = await Room.findOne({ _id: req.params.id, isDeleted: false });
     if (!room) {
@@ -365,7 +366,7 @@ router.post('/:id/leave', verifyToken, async (req: Request, res: Response) => {
 });
 
 // Get active users in room
-router.get('/:id/users', verifyToken, async (req: Request, res: Response) => {
+router.get('/:id/users', verifyToken, validator(mongoIdSchema, 'params'), async (req: Request, res: Response) => {
   try {
     const room = await Room.findOne({ _id: req.params.id, isDeleted: false }).select('activeUsers');
     if (!room) {

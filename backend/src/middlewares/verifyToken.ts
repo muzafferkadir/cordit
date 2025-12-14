@@ -1,8 +1,7 @@
 import { Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { CustomRequest, CustomResponse, JwtPayload } from '../types/express';
-
-const JWT_SECRET = process.env.ACCESS_TOKEN_SECRET || '';
+import { config } from '../config';
 
 const verifyToken = async (
   req: CustomRequest,
@@ -22,7 +21,7 @@ const verifyToken = async (
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+    const decoded = jwt.verify(token, config.jwtSecret) as JwtPayload;
     req.user = decoded;
     next();
   } catch {
