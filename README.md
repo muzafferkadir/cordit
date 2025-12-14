@@ -1,8 +1,8 @@
-# Litecord
+# Cordit
 
 A lightweight, self-hosted Discord-like chat application with real-time messaging and voice chat support.
 
-![Litecord Banner](https://img.shields.io/badge/Litecord-Chat%20%26%20Voice-purple?style=for-the-badge)
+![Cordit Banner](https://img.shields.io/badge/Cordit-Chat%20%26%20Voice-purple?style=for-the-badge)
 ![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)
 ![Docker](https://img.shields.io/badge/docker-ready-blue?style=for-the-badge)
 
@@ -26,8 +26,8 @@ A lightweight, self-hosted Discord-like chat application with real-time messagin
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/litecord.git
-cd litecord
+git clone https://github.com/yourusername/cordit.git
+cd cordit
 ```
 
 ### 2. Configure Environment
@@ -40,9 +40,9 @@ Edit `.env` with your settings:
 
 ```env
 # Your domains
-FRONTEND_URL=https://litecord.example.com
-BACKEND_URL=https://api.litecord.example.com
-LIVEKIT_URL=wss://livekit.litecord.example.com
+FRONTEND_URL=https://cordit.example.com
+BACKEND_URL=https://api.cordit.example.com
+LIVEKIT_URL=wss://livekit.cordit.example.com
 
 # Security (CHANGE THESE!)
 ACCESS_TOKEN_SECRET=your-super-secret-key-here
@@ -56,11 +56,11 @@ Point these domains to your server:
 
 | Domain | Type | Value |
 |--------|------|-------|
-| `litecord.example.com` | A | `YOUR_SERVER_IP` |
-| `api.litecord.example.com` | A | `YOUR_SERVER_IP` |
-| `livekit.litecord.example.com` | A | `YOUR_SERVER_IP` |
+| `cordit.example.com` | A | `YOUR_SERVER_IP` |
+| `api.cordit.example.com` | A | `YOUR_SERVER_IP` |
+| `livekit.cordit.example.com` | A | `YOUR_SERVER_IP` |
 
-> **Tip**: Use a wildcard record `*.litecord.example.com` for simplicity
+> **Tip**: Use a wildcard record `*.cordit.example.com` for simplicity
 
 ### 4. Deploy
 
@@ -70,8 +70,8 @@ docker compose up -d --build
 
 ### 5. Access
 
-- **Frontend**: https://litecord.example.com
-- **Backend API**: https://api.litecord.example.com
+- **Frontend**: https://cordit.example.com
+- **Backend API**: https://api.cordit.example.com
 
 ## 🔧 Configuration Options
 
@@ -103,8 +103,8 @@ docker compose up -d --build
 │       │          └──────────┘         │              │
 └───────┼───────────────────────────────┼──────────────┘
         ▼                               ▼
-   litecord.com                  livekit.litecord.com
-   api.litecord.com
+   cordit.com                  livekit.cordit.com
+   api.cordit.com
 ```
 
 ## 💻 Local Development
@@ -135,7 +135,7 @@ yarn dev
 ## 📁 Project Structure
 
 ```
-litecord/
+cordit/
 ├── backend/               # Express.js API
 │   ├── src/
 │   │   ├── models/       # Mongoose models
@@ -162,9 +162,9 @@ litecord/
 2. Connect your repository
 3. Set environment variables
 4. Configure domains for each service:
-   - `frontend` → litecord.example.com (port 3000)
-   - `backend` → api.litecord.example.com (port 3000)
-   - `livekit` → livekit.litecord.example.com (port 7880)
+   - `frontend` → cordit.example.com (port 3000)
+   - `backend` → api.cordit.example.com (port 3000)
+   - `livekit` → livekit.cordit.example.com (port 7880)
 5. Enable HTTPS and WebSocket support for LiveKit
 
 ### Coolify / Portainer

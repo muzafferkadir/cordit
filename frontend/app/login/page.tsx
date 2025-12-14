@@ -44,7 +44,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-surface p-4">
       <div className="card-brutal bg-card w-full max-w-md p-6">
         <div className="mb-6 text-center">
-          <h1 className="text-4xl font-black text-dark mb-2">LITECORD</h1>
+          <h1 className="text-4xl font-black text-dark mb-2">CORDIT</h1>
           <p className="text-sm font-medium text-dim">Voice chat + messaging</p>
         </div>
 

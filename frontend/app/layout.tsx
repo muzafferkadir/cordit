@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "LITECORD - Voice Chat & Messaging",
+  title: "CORDIT - Voice Chat & Messaging",
   description: "Real-time voice chat and messaging platform with neobrutalism design",
   viewport: "width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes",
 };

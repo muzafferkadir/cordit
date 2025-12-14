@@ -1,7 +1,7 @@
 {
-  "name": "litecord-backend",
+  "name": "cordit-backend",
   "version": "1.0.0",
-  "description": "Litecord - Lightweight Discord-like chat backend with real-time messaging and voice support",
+  "description": "Cordit - Lightweight Discord-like chat backend with real-time messaging and voice support",
   "main": "dist/app.js",
   "scripts": {
     "start": "node dist/app.js",
@@ -22,7 +22,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/litecord.git"
+    "url": "https://github.com/yourusername/cordit.git"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",

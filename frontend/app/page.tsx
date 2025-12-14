@@ -176,7 +176,7 @@ export default function Home() {
               <HamburgerMenu onClose={() => setShowRoomsMenu(!showRoomsMenu)} />
             </div>
             <div>
-              <h1 className="text-xl font-black tracking-tight text-white">LITECORD</h1>
+              <h1 className="text-xl font-black tracking-tight text-white">CORDIT</h1>
               <p className="text-xs font-bold mt-1 text-white opacity-70">
                 {isConnected ? 'LIVE' : 'OFFLINE'}
               </p>

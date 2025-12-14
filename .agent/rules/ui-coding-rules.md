@@ -2,7 +2,7 @@
 trigger: always_on
 ---
 
-# Litecord Frontend Coding Rules
+# Frontend Coding Rules
 
 ## 1. Styling Rules
 

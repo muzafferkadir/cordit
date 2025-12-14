@@ -2,11 +2,11 @@ services:
   mongo:
     image: mongo:latest
     environment:
-      MONGO_INITDB_DATABASE: litecord
+      MONGO_INITDB_DATABASE: cordit
     volumes:
       - mongo-data:/data/db
     networks:
-      - litecord-network
+      - cordit-network
     restart: unless-stopped
 
   livekit:
@@ -17,7 +17,7 @@ services:
     expose:
       - "7880"
     networks:
-      - litecord-network
+      - cordit-network
     restart: unless-stopped
 
   backend:
@@ -28,7 +28,7 @@ services:
       - mongo
       - livekit
     environment:
-      DATABASE_URL: mongodb://mongo:27017/litecord
+      DATABASE_URL: mongodb://mongo:27017/cordit
       LIVEKIT_API_URL: http://livekit:7880
       LIVEKIT_URL: ${LIVEKIT_URL}
       HOST: "0.0.0.0"
@@ -43,7 +43,7 @@ services:
     expose:
       - "3000"
     networks:
-      - litecord-network
+      - cordit-network
     restart: unless-stopped
 
   frontend:
@@ -60,11 +60,11 @@ services:
     expose:
       - "3000"
     networks:
-      - litecord-network
+      - cordit-network
     restart: unless-stopped
 
 networks:
-  litecord-network:
+  cordit-network:
     driver: bridge
 
 volumes:

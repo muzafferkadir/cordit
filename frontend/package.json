@@ -1,7 +1,7 @@
 {
-  "name": "litecord-frontend",
+  "name": "cordit-frontend",
   "version": "1.0.0",
-  "description": "Litecord - Lightweight Discord-like chat frontend with real-time messaging and voice support",
+  "description": "Cordit - Lightweight Discord-like chat frontend with real-time messaging and voice support",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -20,7 +20,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yourusername/litecord.git"
+    "url": "https://github.com/yourusername/cordit.git"
   },
   "dependencies": {
     "@livekit/components-react": "^2.9.16",
