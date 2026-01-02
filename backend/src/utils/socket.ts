@@ -128,6 +128,15 @@ export const initializeSocket = (httpServer: HTTPServer) => {
           return;
         }
 
+        // Check if user is in the room (same check as HTTP API)
+        const isUserInRoom = room.activeUsers.some(
+          (u) => u.username === socket.username,
+        );
+        if (!isUserInRoom) {
+          socket.emit('error', { message: 'You must join the room before sending messages' });
+          return;
+        }
+
         // Get user from database to get ObjectId
         const User = (await import('../models/user')).default;
         const user = await User.findOne({ username: socket.username });

@@ -4,6 +4,7 @@ import validator from '../middlewares/validator';
 import verifyToken from '../middlewares/verifyToken';
 import checkRoles from '../middlewares/checkRoles';
 import { sendMessage, getMessages } from '../validators/message';
+import { roomIdSchema, mongoIdSchema } from '../validators/params';
 import Message from '../models/message';
 import Room from '../models/room';
 
@@ -59,7 +60,7 @@ router.post('/', verifyToken, validator(sendMessage), async (req: Request, res: 
 });
 
 // Get messages from a room (by roomId in path)
-router.get('/room/:roomId', verifyToken, async (req: Request, res: Response) => {
+router.get('/room/:roomId', verifyToken, validator(roomIdSchema, 'params'), async (req: Request, res: Response) => {
   try {
     const { roomId } = req.params;
     const { page = 1, limit = 50 } = req.query;
@@ -136,7 +137,7 @@ router.get('/', verifyToken, validator(getMessages, 'query'), async (req: Reques
 });
 
 // Get a specific message
-router.get('/:id', verifyToken, async (req: Request, res: Response) => {
+router.get('/:id', verifyToken, validator(mongoIdSchema, 'params'), async (req: Request, res: Response) => {
   try {
     const message = await Message.findOne({ _id: req.params.id, isDeleted: false });
     if (!message) {
@@ -151,7 +152,7 @@ router.get('/:id', verifyToken, async (req: Request, res: Response) => {
 });
 
 // Delete a message (own message or admin - soft delete)
-router.delete('/:id', verifyToken, async (req: Request, res: Response) => {
+router.delete('/:id', verifyToken, validator(mongoIdSchema, 'params'), async (req: Request, res: Response) => {
   try {
     const message = await Message.findOne({ _id: req.params.id, isDeleted: false });
     if (!message) {

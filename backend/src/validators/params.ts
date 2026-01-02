@@ -10,6 +10,16 @@ export const mongoIdSchema = Joi.object({
         }),
 });
 
+export const roomIdSchema = Joi.object({
+    roomId: Joi.string()
+        .regex(/^[0-9a-fA-F]{24}$/)
+        .required()
+        .messages({
+            'string.pattern.base': 'Invalid room ID format',
+            'any.required': 'Room ID is required',
+        }),
+});
+
 export const inviteCodeSchema = Joi.object({
     code: Joi.string()
         .regex(/^[A-Z0-9]{8}$/)
