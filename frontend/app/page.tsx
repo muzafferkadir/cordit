@@ -10,6 +10,7 @@ import VoiceChat from '@/components/VoiceChat';
 import MobileNav from '@/components/MobileNav';
 import RoomsSidebar from '@/components/RoomsSidebar';
 import HamburgerMenu from '@/components/HamburgerMenu';
+import ConfirmDialog from '@/components/ConfirmDialog';
 
 export default function Home() {
   const router = useRouter();
@@ -28,6 +29,7 @@ export default function Home() {
   const [leaveTrigger, setLeaveTrigger] = useState(false);
   const [muteTrigger, setMuteTrigger] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; messageId: string | null }>({ isOpen: false, messageId: null });
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -157,6 +159,26 @@ export default function Home() {
     return bgs[idx % 4];
   };
 
+  const handleDeleteMessage = async (messageId: string) => {
+    setDeleteConfirm({ isOpen: true, messageId });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm.messageId) return;
+    try {
+      await messageAPI.delete(deleteConfirm.messageId);
+      setMessages(messages.filter(m => m._id !== deleteConfirm.messageId));
+    } catch (error) {
+      console.error('Failed to delete message:', error);
+    } finally {
+      setDeleteConfirm({ isOpen: false, messageId: null });
+    }
+  };
+
+  const canDeleteMessage = (msgUsername: string) => {
+    return user?.role === 'admin' || user?.username === msgUsername;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-surface">
@@ -262,9 +284,23 @@ export default function Home() {
                     >
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-black text-sm">{msg.username}</span>
-                        <span className="badge-brutal text-xs bg-card">
-                          {format(new Date(msg.createdAt), 'HH:mm')}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {canDeleteMessage(msg.username) && (
+                            <button
+                              onClick={() => handleDeleteMessage(msg._id)}
+                              className="badge-brutal cursor-pointer hover:bg-error transition-colors"
+                              style={{ width: '28px', height: '28px', background: 'var(--bg-secondary)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            >
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="3 6 5 6 21 6" />
+                                <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                              </svg>
+                            </button>
+                          )}
+                          <span className="badge-brutal text-xs bg-card">
+                            {format(new Date(msg.createdAt), 'HH:mm')}
+                          </span>
+                        </div>
                       </div>
                       <p className="font-medium text-sm">{msg.text}</p>
                     </div>
@@ -398,9 +434,23 @@ export default function Home() {
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-black text-xs">{msg.username}</span>
-                    <span className="badge-brutal text-xs" style={{ background: 'var(--bg-card)' }}>
-                      {format(new Date(msg.createdAt), 'HH:mm')}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {canDeleteMessage(msg.username) && (
+                        <button
+                          onClick={() => handleDeleteMessage(msg._id)}
+                          className="badge-brutal cursor-pointer hover:bg-error transition-colors"
+                          style={{ width: '24px', height: '24px', background: 'var(--bg-secondary)', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                          </svg>
+                        </button>
+                      )}
+                      <span className="badge-brutal text-xs" style={{ background: 'var(--bg-card)' }}>
+                        {format(new Date(msg.createdAt), 'HH:mm')}
+                      </span>
+                    </div>
                   </div>
                   <p className="font-medium text-sm">{msg.text}</p>
                 </div>
@@ -444,6 +494,15 @@ export default function Home() {
           </form>
         </div>
       )}
+
+      <ConfirmDialog
+        isOpen={deleteConfirm.isOpen}
+        title="DELETE MESSAGE"
+        message="Are you sure you want to delete this message?"
+        confirmText="DELETE"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm({ isOpen: false, messageId: null })}
+      />
     </div>
   );
 }
