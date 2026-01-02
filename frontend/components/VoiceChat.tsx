@@ -44,7 +44,7 @@ function VoiceControls({ onLeave }: { onLeave: () => void }) {
   };
 
   return (
-    <div style={{ padding: '1rem 1.5rem', background: 'var(--bg-card)', borderTop: '3px solid black' }}>
+    <div style={{ padding: '1.2rem 1.5rem', background: 'var(--bg-card)', borderTop: '3px solid black' }}>
       <div className="flex gap-3">
         <button
           onClick={toggleMute}
@@ -75,6 +75,8 @@ function ParticipantsList({ compact = false }: { compact?: boolean }) {
   const participants = useParticipants();
   const tracks = useTracks();
   const [speakingParticipants, setSpeakingParticipants] = useState<Set<string>>(new Set());
+  const [volumeLevels, setVolumeLevels] = useState<Record<string, number>>({});
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; participantId: string } | null>(null);
 
   useEffect(() => {
     const listeners = new Map<any, (speaking: boolean) => void>();
@@ -103,6 +105,21 @@ function ParticipantsList({ compact = false }: { compact?: boolean }) {
     };
   }, [participants]);
 
+
+  const handleVolumeChange = (participantId: string, volume: number) => {
+    setVolumeLevels(prev => ({ ...prev, [participantId]: volume }));
+
+    const participant = participants.find(p => p.identity === participantId);
+    if (participant) {
+      const audioTrack = tracks.find(
+        t => t.participant === participant && t.source === Track.Source.Microphone
+      );
+      if (audioTrack?.publication?.track) {
+        (audioTrack.publication.track as any).setVolume?.(volume);
+      }
+    }
+  };
+
   const colors = ['var(--bg-card)', 'var(--bg-secondary)', 'var(--bg-success)', 'var(--bg-purple)'];
 
   return (
@@ -114,6 +131,8 @@ function ParticipantsList({ compact = false }: { compact?: boolean }) {
           );
           const isMuted = audioTrack?.publication?.isMuted ?? true;
           const isSpeaking = speakingParticipants.has(participant.identity);
+          const volume = volumeLevels[participant.identity] ?? 1;
+          const isExpanded = contextMenu?.participantId === participant.identity;
 
           return (
             <div
@@ -126,20 +145,51 @@ function ParticipantsList({ compact = false }: { compact?: boolean }) {
                 transition: 'border 0.1s ease',
               }}
             >
-              <div className="flex items-center justify-between">
+              <div
+                className="flex items-center justify-between cursor-pointer"
+                onClick={() => setContextMenu(isExpanded ? null : { x: 0, y: 0, participantId: participant.identity })}
+              >
                 <span className="font-black text-sm">
                   {participant.name || participant.identity}
                 </span>
-                <span
-                  className="badge-brutal text-xs"
-                  style={{
-                    background: isMuted ? 'var(--error)' : isSpeaking ? 'var(--success)' : 'var(--warning)',
-                    color: 'white',
-                  }}
-                >
-                  {isMuted ? 'MUTED' : isSpeaking ? 'SPEAKING' : 'LIVE'}
-                </span>
+                <div className="flex items-center gap-2">
+                  {volume < 1 && (
+                    <span className="text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>
+                      {Math.round(volume * 100)}%
+                    </span>
+                  )}
+                  <span
+                    className="badge-brutal text-xs"
+                    style={{
+                      background: isMuted ? 'var(--error)' : isSpeaking ? 'var(--success)' : 'var(--warning)',
+                      color: 'white',
+                    }}
+                  >
+                    {isMuted ? 'MUTED' : isSpeaking ? 'SPEAKING' : 'LIVE'}
+                  </span>
+                </div>
               </div>
+              {isExpanded && (
+                <div
+                  className="flex items-center gap-2 mt-2 pt-2"
+                  style={{ borderTop: '2px solid rgba(0,0,0,0.1)' }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span className="text-xs font-bold" style={{ minWidth: '32px' }}>
+                    {Math.round(volume * 100)}%
+                  </span>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={volume}
+                    onChange={(e) => handleVolumeChange(participant.identity, parseFloat(e.target.value))}
+                    className="flex-1"
+                    style={{ accentColor: 'var(--primary)' }}
+                  />
+                </div>
+              )}
             </div>
           );
         })}
@@ -339,9 +389,20 @@ export default function VoiceChat({
         token={livekitToken}
         serverUrl={livekitUrl}
         connect={true}
-        audio={true}
+        audio={{ noiseSuppression: true, echoCancellation: true, autoGainControl: true }}
         video={false}
         className={isMobile ? '' : 'h-full'}
+        onError={(err) => {
+          console.error('LiveKit connection error:', err);
+          setError('Voice server unavailable');
+          leaveVoice();
+        }}
+        onDisconnected={() => {
+          if (isJoined) {
+            setError('Disconnected from voice');
+            leaveVoice();
+          }
+        }}
       >
         <VoiceConnected
           onLeave={leaveVoice}

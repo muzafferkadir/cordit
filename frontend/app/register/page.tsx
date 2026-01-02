@@ -71,7 +71,8 @@ export default function RegisterPage() {
 
       router.push('/');
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Registration failed');
+      const errorMsg = err.response?.data?.error || err.response?.data?.message || 'Registration failed';
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
