@@ -12,7 +12,7 @@ services:
     image: livekit/livekit-server:latest
     command: --dev
     environment:
-      LIVEKIT_KEYS: "${LIVEKIT_API_KEY}:${LIVEKIT_API_SECRET}"
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
     expose:
       - "7880"
     networks:
