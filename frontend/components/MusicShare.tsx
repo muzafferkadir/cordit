@@ -35,11 +35,11 @@ export function MusicShareControls() {
         const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
         
         if (isSafari) {
-          setError('Safari tarayıcısı tab ses paylaşımını desteklemiyor. Chrome veya Firefox kullanın.');
+          setError('Safari does not support tab audio capture. Use Chrome or Firefox.');
         } else if (!isHttps && !isLocalhost) {
-          setError('Ses paylaşımı sadece HTTPS veya localhost üzerinde çalışır');
+          setError('Audio sharing requires HTTPS or localhost');
         } else {
-          setError('Tarayıcınız ses paylaşımını desteklemiyor. Chrome veya Firefox güncel versiyonunu kullanın.');
+          setError('Your browser does not support audio sharing. Use latest Chrome or Firefox.');
         }
         console.error('getDisplayMedia not supported', { browserInfo, isHttps, isLocalhost });
         return;
@@ -58,13 +58,13 @@ export function MusicShareControls() {
       const audioTrack = stream.getAudioTracks()[0];
 
       if (!audioTrack) {
-        throw new Error('Ses track\'i bulunamadı - sekme seçerken "Share tab audio" kutucuğunu işaretleyin');
+        throw new Error('No audio track found - make sure to check "Share tab audio" when selecting');
       }
 
       stream.getVideoTracks().forEach(track => track.stop());
 
       audioTrack.onended = () => {
-        console.log('Kullanıcı ses paylaşımını durdurdu');
+        console.log('User stopped audio sharing');
         stopMusicShare();
       };
 
@@ -83,20 +83,20 @@ export function MusicShareControls() {
       setMusicTrack(livekitTrack);
       setIsSharing(true);
 
-      console.log('Müzik paylaşımı başladı');
+      console.log('Music sharing started');
     } catch (error: any) {
-      console.error('Müzik paylaşımı başarısız:', error);
+      console.error('Music sharing failed:', error);
 
       if (error.name === 'NotAllowedError') {
-        setError('İzin verilmedi - lütfen paylaşmak için bir sekme seçin ve "Share audio" seçeneğini işaretleyin');
+        setError('Permission denied - please select a tab and check "Share audio" option');
       } else if (error.name === 'NotSupportedError') {
-        setError('Tarayıcınız tab ses yakalamayı desteklemiyor. Chrome/Firefox kullanın ve HTTPS bağlantısı olduğundan emin olun.');
+        setError('Your browser does not support tab audio capture. Use Chrome/Firefox with HTTPS.');
       } else if (error.name === 'NotFoundError') {
-        setError('Ses kaynağı bulunamadı - sekme seçerken "Share audio" kutucuğunu işaretleyin');
+        setError('Audio source not found - make sure to check "Share audio" when selecting tab');
       } else if (error.name === 'TypeError' && error.message.includes('audio')) {
-        setError('Ses yakalama başarısız - Chrome veya Firefox güncel versiyonunu kullanın');
+        setError('Audio capture failed - use latest Chrome or Firefox');
       } else {
-        setError(`Müzik paylaşımı başlatılamadı: ${error.message || 'Bilinmeyen hata'}`);
+        setError(`Failed to start music sharing: ${error.message || 'Unknown error'}`);
       }
     }
   };
@@ -110,9 +110,9 @@ export function MusicShareControls() {
       }
       setIsSharing(false);
       setError('');
-      console.log('Müzik paylaşımı durduruldu');
+      console.log('Music sharing stopped');
     } catch (error) {
-      console.error('Müzik paylaşımı durdurulurken hata:', error);
+      console.error('Error stopping music sharing:', error);
     }
   };
 
@@ -139,7 +139,7 @@ export function MusicShareControls() {
           color: 'black',
         }}
       >
-        {isSharing ? 'MÜZİĞİ DURDUR' : 'MÜZİK PAYLAŞ'}
+        {isSharing ? 'STOP MUSIC' : 'SHARE MUSIC'}
       </button>
 
       {error && (
@@ -150,13 +150,13 @@ export function MusicShareControls() {
 
       {isSharing && (
         <p className="text-xs font-bold mt-2" style={{ color: 'var(--success)' }}>
-          ✓ Sekmenizdeki ses akışı yapılıyor
+          ✓ Streaming audio from your tab
         </p>
       )}
 
       {!isSharing && !error && (
         <p className="text-xs font-bold mt-2 opacity-60">
-          YouTube, Spotify veya başka bir sekmedeki sesi paylaşın
+          Share audio from YouTube, Spotify, or any other tab
         </p>
       )}
     </div>

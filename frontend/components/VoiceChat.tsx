@@ -166,7 +166,7 @@ function ParticipantsList({ compact = false }: { compact?: boolean }) {
                         color: 'black',
                       }}
                     >
-                      MÜZİK
+                      MUSIC
                     </span>
                   )}
                   {volume < 1 && (
