@@ -7,18 +7,16 @@ services:
       - mongo-data:/data/db
     networks:
       - cordit-network
-    restart: unless-stopped
 
   livekit:
     image: livekit/livekit-server:latest
     command: --dev
     environment:
-      LIVEKIT_KEYS: "${LIVEKIT_API_KEY:-devkey}: ${LIVEKIT_API_SECRET:-secret}"
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY}:${LIVEKIT_API_SECRET}"
     expose:
       - "7880"
     networks:
       - cordit-network
-    restart: unless-stopped
 
   backend:
     build:
@@ -31,21 +29,16 @@ services:
       DATABASE_URL: mongodb://mongo:27017/cordit
       LIVEKIT_API_URL: http://livekit:7880
       LIVEKIT_URL: ${LIVEKIT_URL}
-      HOST: "0.0.0.0"
-      PORT: "3000"
-      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET:-change-this-secret-in-production-32chars}
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-*}
+      ACCESS_TOKEN_SECRET: ${ACCESS_TOKEN_SECRET}
       CREATE_ADMIN_INITIALLY: "true"
-      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-admin123}
-      INVITE_CODE_EXPIRY_HOURS: ${INVITE_CODE_EXPIRY_HOURS:-24}
-      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY:-devkey}
-      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET:-secret}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
     expose:
       - "3000"
     networks:
       - cordit-network
-    restart: unless-stopped
 
   frontend:
     build:
@@ -62,7 +55,6 @@ services:
       - "3000"
     networks:
       - cordit-network
-    restart: unless-stopped
 
 networks:
   cordit-network:
