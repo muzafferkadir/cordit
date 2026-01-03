@@ -12,6 +12,7 @@ import {
   useLocalParticipant,
   useRoomContext,
 } from '@livekit/components-react';
+import { MusicShareControls } from './MusicShare';
 
 function VoiceControls({ onLeave }: { onLeave: () => void }) {
   const room = useRoomContext();
@@ -129,8 +130,12 @@ function ParticipantsList({ compact = false }: { compact?: boolean }) {
           const audioTrack = tracks.find(
             t => t.participant === participant && t.source === Track.Source.Microphone
           );
+          const musicTrack = tracks.find(
+            t => t.participant === participant && t.source === Track.Source.ScreenShareAudio
+          );
           const isMuted = audioTrack?.publication?.isMuted ?? true;
           const isSpeaking = speakingParticipants.has(participant.identity);
+          const isSharingMusic = !!musicTrack;
           const volume = volumeLevels[participant.identity] ?? 1;
           const isExpanded = contextMenu?.participantId === participant.identity;
 
@@ -153,6 +158,17 @@ function ParticipantsList({ compact = false }: { compact?: boolean }) {
                   {participant.name || participant.identity}
                 </span>
                 <div className="flex items-center gap-2">
+                  {isSharingMusic && (
+                    <span
+                      className="badge-brutal text-xs"
+                      style={{
+                        background: 'var(--primary)',
+                        color: 'black',
+                      }}
+                    >
+                      MÜZİK
+                    </span>
+                  )}
                   {volume < 1 && (
                     <span className="text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>
                       {Math.round(volume * 100)}%
@@ -243,6 +259,8 @@ function VoiceConnected({ onLeave, isMobile = false, externalMuteTrigger, onMute
       <div className="flex-1 overflow-y-auto">
         <ParticipantsList />
       </div>
+
+      <MusicShareControls />
 
       <VoiceControls onLeave={onLeave} />
 
