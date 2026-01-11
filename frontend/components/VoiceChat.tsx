@@ -106,11 +106,11 @@ function VoiceControls({ onLeave }: { onLeave: () => void }) {
     if (!localParticipant) return;
 
     try {
-      const audioTrack = localParticipant.getTrackPublication(Track.Source.Microphone);
-      if (audioTrack) {
-        const newMutedState = !audioTrack.isMuted;
-        await localParticipant.setMicrophoneEnabled(!newMutedState);
-        setIsMuted(newMutedState);
+    const audioTrack = localParticipant.getTrackPublication(Track.Source.Microphone);
+    if (audioTrack) {
+      const newMutedState = !audioTrack.isMuted;
+      await localParticipant.setMicrophoneEnabled(!newMutedState);
+      setIsMuted(newMutedState);
       } else {
         if (microphones.length === 0) {
           const hasPermission = await requestMicrophonePermission();
@@ -387,15 +387,15 @@ function ParticipantsList({ compact = false }: { compact?: boolean }) {
                       MUSIC
                     </span>
                   ) : (
-                    <span
-                      className="badge-brutal text-xs"
-                      style={{
-                        background: isMuted ? 'var(--error)' : isSpeaking ? 'var(--success)' : 'var(--warning)',
-                        color: 'white',
-                      }}
-                    >
-                      {isMuted ? 'MUTED' : isSpeaking ? 'SPEAKING' : 'LIVE'}
-                    </span>
+                  <span
+                    className="badge-brutal text-xs"
+                    style={{
+                      background: isMuted ? 'var(--error)' : isSpeaking ? 'var(--success)' : 'var(--warning)',
+                      color: 'white',
+                    }}
+                  >
+                    {isMuted ? 'MUTED' : isSpeaking ? 'SPEAKING' : 'LIVE'}
+                  </span>
                   )}
                 </div>
               </div>
@@ -403,20 +403,20 @@ function ParticipantsList({ compact = false }: { compact?: boolean }) {
               {isExpanded && (
                 <div style={{ borderTop: '2px solid rgba(0,0,0,0.1)' }} onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-2 mt-2 pt-2">
-                    <span className="text-xs font-bold" style={{ minWidth: '32px' }}>
-                      {Math.round(volume * 100)}%
-                    </span>
+                  <span className="text-xs font-bold" style={{ minWidth: '32px' }}>
+                    {Math.round(volume * 100)}%
+                  </span>
                     <span className="text-xs font-bold opacity-60" style={{ minWidth: '60px' }}>Voice</span>
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.05"
-                      value={volume}
-                      onChange={(e) => handleVolumeChange(participant.identity, parseFloat(e.target.value))}
-                      className="flex-1"
-                      style={{ accentColor: 'var(--primary)' }}
-                    />
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    value={volume}
+                    onChange={(e) => handleVolumeChange(participant.identity, parseFloat(e.target.value))}
+                    className="flex-1"
+                    style={{ accentColor: 'var(--primary)' }}
+                  />
                   </div>
 
                   {isSharingMusic && (
@@ -682,7 +682,7 @@ export default function VoiceChat({
           if (error.message?.includes('microphone') || error.message?.includes('permission')) {
             setError('Microphone permission denied. Please allow microphone access.');
           } else {
-            setError('Voice server unavailable');
+          setError('Voice server unavailable');
           }
           leaveVoice();
         }}

@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import express, { Router, Request, Response } from 'express';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import User from '../models/user';
 import InviteCode from '../models/inviteCode';
@@ -10,6 +10,7 @@ import checkRoles from '../middlewares/checkRoles';
 import { login, register } from '../validators/user';
 import { mongoIdSchema } from '../validators/params';
 import { config } from '../config';
+import { JwtPayload } from '../types/express';
 
 const router: Router = express.Router();
 
@@ -29,14 +30,27 @@ router.post('/login', validator(login), async (req: Request, res: Response) => {
       return;
     }
 
+    const tokenOptions: SignOptions = { expiresIn: config.jwtExpiration as any };
+    const refreshTokenOptions: SignOptions = { expiresIn: config.refreshTokenExpiration as any };
+
     const token = jwt.sign(
       { username: user.username, role: user.role },
       config.jwtSecret,
-      { expiresIn: '2h' },
+      tokenOptions,
     );
+
+    const refreshToken = jwt.sign(
+      { username: user.username, role: user.role },
+      config.refreshTokenSecret,
+      refreshTokenOptions,
+    );
+
+    user.refreshToken = refreshToken;
+    await user.save();
 
     res.sendResponse(200, {
       token,
+      refreshToken,
       username: user.username,
       role: user.role
     });
@@ -105,16 +119,28 @@ router.post('/register', validator(register), async (req: Request, res: Response
 
     await invite.save();
 
-    // Generate token for new user
+    const tokenOptions: SignOptions = { expiresIn: config.jwtExpiration as any };
+    const refreshTokenOptions: SignOptions = { expiresIn: config.refreshTokenExpiration as any };
+
     const token = jwt.sign(
       { username: newUser.username, role: newUser.role },
       config.jwtSecret,
-      { expiresIn: '2h' },
+      tokenOptions,
     );
+
+    const refreshToken = jwt.sign(
+      { username: newUser.username, role: newUser.role },
+      config.refreshTokenSecret,
+      refreshTokenOptions,
+    );
+
+    newUser.refreshToken = refreshToken;
+    await newUser.save();
 
     res.sendResponse(201, {
       message: 'User registered successfully',
       token,
+      refreshToken,
       username: newUser.username,
       role: newUser.role,
     });
@@ -171,6 +197,60 @@ router.delete('/:id', verifyToken, checkRoles('admin'), validator(mongoIdSchema,
     await userToDelete.save();
 
     res.sendResponse(200, 'User deleted successfully');
+  } catch (error) {
+    res.sendError(500, error);
+  }
+});
+
+router.post('/refresh', async (req: Request, res: Response) => {
+  try {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken) {
+      res.sendError(401, 'Refresh token is required');
+      return;
+    }
+
+    let decoded: JwtPayload;
+    try {
+      decoded = jwt.verify(refreshToken, config.refreshTokenSecret) as JwtPayload;
+    } catch {
+      res.sendError(401, 'Invalid or expired refresh token');
+      return;
+    }
+
+    const user = await User.findOne({ 
+      username: decoded.username, 
+      isDeleted: false 
+    }).select('+refreshToken');
+
+    if (!user || !user.refreshToken || user.refreshToken !== refreshToken) {
+      res.sendError(401, 'Invalid refresh token');
+      return;
+    }
+
+    const tokenOptions: SignOptions = { expiresIn: config.jwtExpiration as any };
+    const refreshTokenOptions: SignOptions = { expiresIn: config.refreshTokenExpiration as any };
+
+    const newToken = jwt.sign(
+      { username: user.username, role: user.role },
+      config.jwtSecret,
+      tokenOptions,
+    );
+
+    const newRefreshToken = jwt.sign(
+      { username: user.username, role: user.role },
+      config.refreshTokenSecret,
+      refreshTokenOptions,
+    );
+
+    user.refreshToken = newRefreshToken;
+    await user.save();
+
+    res.sendResponse(200, {
+      token: newToken,
+      refreshToken: newRefreshToken,
+    });
   } catch (error) {
     res.sendError(500, error);
   }

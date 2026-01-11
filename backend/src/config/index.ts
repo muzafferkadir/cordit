@@ -12,9 +12,16 @@ if (!DATABASE_URL || (!DATABASE_URL.startsWith('mongodb://') && !DATABASE_URL.st
     process.exit(1);
 }
 
+const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || JWT_SECRET + '_refresh';
+if (!REFRESH_TOKEN_SECRET || REFRESH_TOKEN_SECRET.length < 32) {
+    logger.warn('REFRESH_TOKEN_SECRET is missing or too short, using JWT_SECRET + "_refresh". Consider setting a separate secret.');
+}
+
 export const config: {
     jwtSecret: string;
     jwtExpiration: string;
+    refreshTokenSecret: string;
+    refreshTokenExpiration: string;
     databaseUrl: string;
     host: string;
     port: number;
@@ -35,6 +42,8 @@ export const config: {
 } = {
     jwtSecret: JWT_SECRET,
     jwtExpiration: (process.env.JWT_EXPIRATION || '2h') as string,
+    refreshTokenSecret: REFRESH_TOKEN_SECRET,
+    refreshTokenExpiration: (process.env.REFRESH_TOKEN_EXPIRATION || '7d') as string,
     databaseUrl: DATABASE_URL,
     host: process.env.HOST || '0.0.0.0',
     port: parseInt(process.env.PORT || '3000', 10),

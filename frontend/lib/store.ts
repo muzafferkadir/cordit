@@ -60,6 +60,7 @@ export const useStore = create<AppState>((set) => ({
   logout: () => {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
       // Disconnect socket
       import('./useSocket').then(({ disconnectSocket }) => {
