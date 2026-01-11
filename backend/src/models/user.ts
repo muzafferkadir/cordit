@@ -4,6 +4,9 @@ export interface IUser extends Document {
   username: string;
   password: string;
   role: 'admin' | 'user';
+  isDeleted?: boolean;
+  deletedAt?: Date;
+  deletedBy?: mongoose.Types.ObjectId;
 }
 
 const userSchema = new Schema<IUser>({
@@ -20,6 +23,17 @@ const userSchema = new Schema<IUser>({
     type: String,
     enum: ['admin', 'user'],
     default: 'user',
+  },
+  isDeleted: {
+    type: Boolean,
+    default: false,
+  },
+  deletedAt: {
+    type: Date,
+  },
+  deletedBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
   },
 });
 

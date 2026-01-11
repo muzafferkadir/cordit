@@ -5,7 +5,10 @@ import bcrypt from 'bcrypt';
 import User from '../models/user';
 import InviteCode from '../models/inviteCode';
 import validator from '../middlewares/validator';
+import verifyToken from '../middlewares/verifyToken';
+import checkRoles from '../middlewares/checkRoles';
 import { login, register } from '../validators/user';
+import { mongoIdSchema } from '../validators/params';
 import { config } from '../config';
 
 const router: Router = express.Router();
@@ -14,7 +17,7 @@ router.post('/login', validator(login), async (req: Request, res: Response) => {
   try {
     const { username, password } = req.body;
 
-    const user = await User.findOne({ username }).select('+password');
+    const user = await User.findOne({ username, isDeleted: false }).select('+password');
     if (!user) {
       res.sendError(401, 'Username or password is incorrect.');
       return;
@@ -115,6 +118,59 @@ router.post('/register', validator(register), async (req: Request, res: Response
       username: newUser.username,
       role: newUser.role,
     });
+  } catch (error) {
+    res.sendError(500, error);
+  }
+});
+
+// Get all users (admin only)
+router.get('/', verifyToken, checkRoles('admin'), async (_req: Request, res: Response) => {
+  try {
+    const users = await User.find({ isDeleted: false })
+      .select('-password')
+      .sort({ createdAt: -1 });
+
+    res.sendResponse(200, { users });
+  } catch (error) {
+    res.sendError(500, error);
+  }
+});
+
+// Delete user (admin only - soft delete)
+router.delete('/:id', verifyToken, checkRoles('admin'), validator(mongoIdSchema, 'params'), async (req: Request, res: Response) => {
+  try {
+    const userToDelete = await User.findOne({ _id: req.params.id, isDeleted: false });
+    if (!userToDelete) {
+      res.sendError(404, 'User not found');
+      return;
+    }
+
+    // Prevent admin from deleting themselves
+    if (userToDelete.username === req.user?.username) {
+      res.sendError(403, 'You cannot delete yourself');
+      return;
+    }
+
+    // Prevent deleting other admins
+    if (userToDelete.role === 'admin') {
+      res.sendError(403, 'Cannot delete admin users');
+      return;
+    }
+
+    // Get admin user from database to get ObjectId
+    const adminUser = await User.findOne({ username: req.user?.username });
+    if (!adminUser) {
+      res.sendError(404, 'Admin user not found');
+      return;
+    }
+
+    // Soft delete the user
+    userToDelete.isDeleted = true;
+    userToDelete.deletedAt = new Date();
+    userToDelete.deletedBy = adminUser._id;
+    await userToDelete.save();
+
+    res.sendResponse(200, 'User deleted successfully');
   } catch (error) {
     res.sendError(500, error);
   }

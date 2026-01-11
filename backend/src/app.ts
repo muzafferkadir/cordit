@@ -20,6 +20,8 @@ import { initializeSocket } from './utils/socket';
 const app: Application = express();
 const httpServer = createServer(app);
 
+app.set('trust proxy', 1);
+
 app.use(helmet());
 
 const generalLimiter = rateLimit({

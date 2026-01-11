@@ -7,7 +7,7 @@ import { createRoom, updateRoom } from '../validators/room';
 import { mongoIdSchema } from '../validators/params';
 import Room from '../models/room';
 import Message from '../models/message';
-import { createLiveKitToken, createLiveKitRoom, deleteLiveKitRoom, getLiveKitRoom } from '../utils/livekit';
+import { createLiveKitToken, createLiveKitRoom, deleteLiveKitRoom, getLiveKitRoom, removeParticipant } from '../utils/livekit';
 
 const router: Router = express.Router();
 
@@ -377,6 +377,60 @@ router.get('/:id/users', verifyToken, validator(mongoIdSchema, 'params'), async 
     res.sendResponse(200, { activeUsers: room.activeUsers });
   } catch (error) {
     res.sendError(500, error);
+  }
+});
+
+// Remove participant from voice room (admin only)
+router.post('/:id/remove-participant', verifyToken, checkRoles('admin'), validator(mongoIdSchema, 'params'), async (req: Request, res: Response) => {
+  try {
+    const room = await Room.findOne({ _id: req.params.id, isDeleted: false });
+    if (!room) {
+      res.sendError(404, 'Room not found');
+      return;
+    }
+
+    const { participantId } = req.body;
+    if (!participantId) {
+      res.sendError(400, 'Participant ID is required');
+      return;
+    }
+
+    if (!room.livekitRoomName) {
+      res.sendError(400, 'Room does not have voice enabled');
+      return;
+    }
+
+    // Remove participant from LiveKit room
+    await removeParticipant(room.livekitRoomName, participantId);
+
+    // Remove user from room's activeUsers if found
+    const userIndex = room.activeUsers.findIndex(
+      (u) => u.livekitParticipantId === participantId
+    );
+    if (userIndex !== -1) {
+      const removedUser = room.activeUsers[userIndex];
+      room.activeUsers.splice(userIndex, 1);
+      await room.save();
+
+      // Create system message
+      const User = (await import('../models/user')).default;
+      const adminUser = await User.findOne({ username: req.user?.username });
+      if (adminUser) {
+        const systemMessage = new Message({
+          roomId: room._id,
+          userId: adminUser._id,
+          username: 'System',
+          text: `${removedUser.username} was removed from voice chat by ${req.user?.username}`,
+          messageType: 'system',
+        });
+        await systemMessage.save();
+      }
+    }
+
+    res.sendResponse(200, { message: 'Participant removed successfully' });
+  } catch (error) {
+    console.error('Error removing participant:', error);
+    res.sendError(500, 'Failed to remove participant');
   }
 });
 

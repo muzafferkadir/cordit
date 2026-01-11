@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { User, Room, Message, InviteCode } from './types';
+import type { Room, Message, InviteCode, UserListItem } from './types';
 
 const API_URL = '/api';
 
@@ -44,6 +44,18 @@ export const authAPI = {
   },
 };
 
+export const userAPI = {
+  getAll: async (): Promise<{ users: UserListItem[] }> => {
+    const { data } = await api.get('/user');
+    return data;
+  },
+
+  delete: async (id: string) => {
+    const { data } = await api.delete(`/user/${id}`);
+    return data;
+  },
+};
+
 export const roomAPI = {
   getAll: async (): Promise<{ rooms: Room[] }> => {
     const { data } = await api.get('/room');
@@ -84,10 +96,15 @@ export const roomAPI = {
     const { data } = await api.get(`/room/${id}/users`);
     return data;
   },
+
+  removeParticipant: async (id: string, participantId: string) => {
+    const { data } = await api.post(`/room/${id}/remove-participant`, { participantId });
+    return data;
+  },
 };
 
 export const messageAPI = {
-  getByRoom: async (roomId: string, page = 1, limit = 50): Promise<{ messages: Message[]; pagination: any }> => {
+  getByRoom: async (roomId: string, page = 1, limit = 50): Promise<{ messages: Message[]; pagination: { page: number; limit: number; total: number; totalPages: number } }> => {
     const { data } = await api.get(`/message/room/${roomId}?page=${page}&limit=${limit}`);
     return data;
   },

@@ -4,6 +4,13 @@ export interface User {
   token: string;
 }
 
+export interface UserListItem {
+  _id: string;
+  username: string;
+  role: 'admin' | 'user';
+  createdAt?: string;
+}
+
 export interface Room {
   _id: string;
   name: string;

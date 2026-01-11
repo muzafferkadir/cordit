@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useStore } from '@/lib/store';
 import { roomAPI } from '@/lib/api';
-import { Track } from 'livekit-client';
+import { Track, RemoteAudioTrack, Participant } from 'livekit-client';
 import {
   LiveKitRoom,
   RoomAudioRenderer,
@@ -20,10 +20,27 @@ function VoiceControls({ onLeave }: { onLeave: () => void }) {
   const [isMuted, setIsMuted] = useState(false);
 
   useEffect(() => {
-    if (localParticipant) {
+    if (!localParticipant) return;
+
+    const updateMuteState = () => {
       const audioTrack = localParticipant.getTrackPublication(Track.Source.Microphone);
       setIsMuted(audioTrack?.isMuted ?? false);
-    }
+    };
+
+    // Initial state
+    updateMuteState();
+
+    // Listen for track publication changes
+    const handleTrackPublished = () => updateMuteState();
+    const handleTrackUnpublished = () => updateMuteState();
+
+    localParticipant.on('trackPublished', handleTrackPublished);
+    localParticipant.on('trackUnpublished', handleTrackUnpublished);
+
+    return () => {
+      localParticipant.off('trackPublished', handleTrackPublished);
+      localParticipant.off('trackUnpublished', handleTrackUnpublished);
+    };
   }, [localParticipant]);
 
   const toggleMute = async () => {
@@ -73,14 +90,19 @@ function VoiceControls({ onLeave }: { onLeave: () => void }) {
 }
 
 function ParticipantsList({ compact = false }: { compact?: boolean }) {
+  const { user, currentRoom } = useStore();
+  const { localParticipant } = useLocalParticipant();
   const participants = useParticipants();
   const tracks = useTracks();
   const [speakingParticipants, setSpeakingParticipants] = useState<Set<string>>(new Set());
   const [volumeLevels, setVolumeLevels] = useState<Record<string, number>>({});
+  const [musicVolumeLevels, setMusicVolumeLevels] = useState<Record<string, number>>({});
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; participantId: string } | null>(null);
+  
+  const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
-    const listeners = new Map<any, (speaking: boolean) => void>();
+    const listeners = new Map<Participant, (speaking: boolean) => void>();
 
     participants.forEach(participant => {
       const handler = (speaking: boolean) => {
@@ -115,9 +137,39 @@ function ParticipantsList({ compact = false }: { compact?: boolean }) {
       const audioTrack = tracks.find(
         t => t.participant === participant && t.source === Track.Source.Microphone
       );
-      if (audioTrack?.publication?.track) {
-        (audioTrack.publication.track as any).setVolume?.(volume);
+      if (audioTrack?.publication?.track && audioTrack.publication.track instanceof RemoteAudioTrack) {
+        audioTrack.publication.track.setVolume(volume);
       }
+    }
+  };
+
+  const handleMusicVolumeChange = (participantId: string, volume: number) => {
+    setMusicVolumeLevels(prev => ({ ...prev, [participantId]: volume }));
+
+    const participant = participants.find(p => p.identity === participantId);
+    if (participant) {
+      const musicTrack = tracks.find(
+        t => t.participant === participant && t.source === Track.Source.ScreenShareAudio
+      );
+      if (musicTrack?.publication?.track && musicTrack.publication.track instanceof RemoteAudioTrack) {
+        musicTrack.publication.track.setVolume(volume);
+      }
+    }
+  };
+
+  const handleRemoveParticipant = async (participantId: string) => {
+    if (!isAdmin || !currentRoom) return;
+    
+    try {
+      // Find the participant
+      const participant = participants.find(p => p.identity === participantId);
+      if (!participant) return;
+
+      // Remove participant via API (this will disconnect them and stop their music)
+      await roomAPI.removeParticipant(currentRoom._id, participantId);
+      console.log(`Removed participant ${participantId} from room`);
+    } catch (error) {
+      console.error('Error removing participant:', error);
     }
   };
 
@@ -137,7 +189,10 @@ function ParticipantsList({ compact = false }: { compact?: boolean }) {
           const isSpeaking = speakingParticipants.has(participant.identity);
           const isSharingMusic = !!musicTrack;
           const volume = volumeLevels[participant.identity] ?? 1;
+          const musicVolume = musicVolumeLevels[participant.identity] ?? 1;
           const isExpanded = contextMenu?.participantId === participant.identity;
+          const isLocalParticipant = participant.identity === localParticipant?.identity;
+          const canRemove = isAdmin && !isLocalParticipant;
 
           return (
             <div
@@ -158,7 +213,7 @@ function ParticipantsList({ compact = false }: { compact?: boolean }) {
                   {participant.name || participant.identity}
                 </span>
                 <div className="flex items-center gap-2">
-                  {isSharingMusic && (
+                  {isSharingMusic ? (
                     <span
                       className="badge-brutal text-xs"
                       style={{
@@ -168,42 +223,77 @@ function ParticipantsList({ compact = false }: { compact?: boolean }) {
                     >
                       MUSIC
                     </span>
-                  )}
-                  {volume < 1 && (
-                    <span className="text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>
-                      {Math.round(volume * 100)}%
+                  ) : (
+                    <span
+                      className="badge-brutal text-xs"
+                      style={{
+                        background: isMuted ? 'var(--error)' : isSpeaking ? 'var(--success)' : 'var(--warning)',
+                        color: 'white',
+                      }}
+                    >
+                      {isMuted ? 'MUTED' : isSpeaking ? 'SPEAKING' : 'LIVE'}
                     </span>
                   )}
-                  <span
-                    className="badge-brutal text-xs"
-                    style={{
-                      background: isMuted ? 'var(--error)' : isSpeaking ? 'var(--success)' : 'var(--warning)',
-                      color: 'white',
-                    }}
-                  >
-                    {isMuted ? 'MUTED' : isSpeaking ? 'SPEAKING' : 'LIVE'}
-                  </span>
                 </div>
               </div>
               {isExpanded && (
                 <div
-                  className="flex items-center gap-2 mt-2 pt-2"
                   style={{ borderTop: '2px solid rgba(0,0,0,0.1)' }}
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <span className="text-xs font-bold" style={{ minWidth: '32px' }}>
-                    {Math.round(volume * 100)}%
-                  </span>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value={volume}
-                    onChange={(e) => handleVolumeChange(participant.identity, parseFloat(e.target.value))}
-                    className="flex-1"
-                    style={{ accentColor: 'var(--primary)' }}
-                  />
+                  <div className="flex items-center gap-2 mt-2 pt-2">
+                    <span className="text-xs font-bold" style={{ minWidth: '32px' }}>
+                      {Math.round(volume * 100)}%
+                    </span>
+                    <span className="text-xs font-bold opacity-60" style={{ minWidth: '60px' }}>
+                      Voice
+                    </span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={volume}
+                      onChange={(e) => handleVolumeChange(participant.identity, parseFloat(e.target.value))}
+                      className="flex-1"
+                      style={{ accentColor: 'var(--primary)' }}
+                    />
+                  </div>
+                  {isSharingMusic && (
+                    <div className="flex items-center gap-2 mt-2 pt-2">
+                      <span className="text-xs font-bold" style={{ minWidth: '32px' }}>
+                        {Math.round(musicVolume * 100)}%
+                      </span>
+                      <span className="text-xs font-bold opacity-60" style={{ minWidth: '60px' }}>
+                        Music
+                      </span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="1"
+                        step="0.05"
+                        value={musicVolume}
+                        onChange={(e) => handleMusicVolumeChange(participant.identity, parseFloat(e.target.value))}
+                        className="flex-1"
+                        style={{ accentColor: 'var(--primary)' }}
+                      />
+                    </div>
+                  )}
+                  {canRemove && (
+                    <div className="mt-2 pt-2" style={{ borderTop: '2px solid rgba(0,0,0,0.1)' }}>
+                      <button
+                        onClick={() => handleRemoveParticipant(participant.identity)}
+                        className="btn-brutal w-full text-xs"
+                        style={{
+                          background: 'var(--error)',
+                          color: 'white',
+                          padding: '0.5rem',
+                        }}
+                      >
+                        REMOVE FROM ROOM
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -301,7 +391,7 @@ export default function VoiceChat({
     setError('');
   }, [currentRoom?._id]);
 
-  const joinVoice = async () => {
+  const joinVoice = useCallback(async () => {
     if (!currentRoom || !user) return;
 
     setConnecting(true);
@@ -318,20 +408,21 @@ export default function VoiceChat({
       } else {
         setError('Voice not available');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Failed to join voice chat:', err);
-      setError(err.response?.data?.error || 'Failed to connect');
+      const error = err as { response?: { data?: { error?: string } } };
+      setError(error.response?.data?.error || 'Failed to connect');
     } finally {
       setConnecting(false);
     }
-  };
+  }, [currentRoom, user, onJoinStateChange]);
 
-  const leaveVoice = () => {
+  const leaveVoice = useCallback(() => {
     setIsJoined(false);
     setLivekitToken(null);
     setLivekitUrl('');
     onJoinStateChange?.(false);
-  };
+  }, [onJoinStateChange]);
 
   const prevJoinTrigger = useRef(externalJoinTrigger);
   const prevLeaveTrigger = useRef(externalLeaveTrigger);
@@ -343,7 +434,7 @@ export default function VoiceChat({
         joinVoice();
       }
     }
-  }, [externalJoinTrigger]);
+  }, [externalJoinTrigger, isJoined, connecting, joinVoice]);
 
   useEffect(() => {
     if (prevLeaveTrigger.current !== externalLeaveTrigger && externalLeaveTrigger !== undefined) {
@@ -352,7 +443,7 @@ export default function VoiceChat({
         leaveVoice();
       }
     }
-  }, [externalLeaveTrigger]);
+  }, [externalLeaveTrigger, isJoined, leaveVoice]);
 
   if (isMobile && !isJoined) {
     return (

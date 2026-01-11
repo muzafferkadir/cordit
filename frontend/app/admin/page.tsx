@@ -3,14 +3,16 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/lib/store';
-import { inviteAPI } from '@/lib/api';
+import { inviteAPI, userAPI } from '@/lib/api';
 import { format } from 'date-fns';
-import type { InviteCode } from '@/lib/types';
+import type { InviteCode, UserListItem } from '@/lib/types';
 
 export default function AdminPage() {
   const router = useRouter();
   const { user, logout } = useStore();
   const [inviteCodes, setInviteCodes] = useState<InviteCode[]>([]);
+  const [users, setUsers] = useState<UserListItem[]>([]);
+  const [activeTab, setActiveTab] = useState<'invites' | 'users'>('invites');
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [expiresInHours, setExpiresInHours] = useState(1);
@@ -30,6 +32,7 @@ export default function AdminPage() {
     }
     if (user) {
       loadInviteCodes();
+      loadUsers();
     }
   }, [router, user]);
 
@@ -41,6 +44,15 @@ export default function AdminPage() {
       setError(err.response?.data?.error || 'Failed to load invite codes');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      const data = await userAPI.getAll();
+      setUsers(data.users);
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to load users');
     }
   };
 
@@ -75,6 +87,18 @@ export default function AdminPage() {
     }
   };
 
+  const handleDeleteUser = async (userId: string, username: string) => {
+    if (!confirm(`Delete user ${username}? This action cannot be undone.`)) return;
+
+    try {
+      await userAPI.delete(userId);
+      setSuccess(`Deleted user: ${username}`);
+      await loadUsers();
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to delete user');
+    }
+  };
+
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setSuccess(`Copied: ${text}`);
@@ -101,7 +125,7 @@ export default function AdminPage() {
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-xl font-black tracking-tight text-white">ADMIN PANEL</h1>
-            <p className="text-xs font-bold mt-1 text-white opacity-70">Manage invite codes</p>
+            <p className="text-xs font-bold mt-1 text-white opacity-70">Manage invite codes and users</p>
           </div>
           <div className="hidden md:flex items-center gap-3">
             <span className="badge-brutal bg-cyan text-white">ADMIN</span>
@@ -137,9 +161,31 @@ export default function AdminPage() {
             </div>
           )}
 
+          {/* Tabs */}
+          <div className="flex gap-2 mb-4">
+            <button
+              onClick={() => setActiveTab('invites')}
+              className={`btn-brutal px-4 py-2 text-sm ${
+                activeTab === 'invites' ? 'bg-purple text-white' : 'bg-card text-dark'
+              }`}
+            >
+              INVITE CODES
+            </button>
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`btn-brutal px-4 py-2 text-sm ${
+                activeTab === 'users' ? 'bg-purple text-white' : 'bg-card text-dark'
+              }`}
+            >
+              USERS ({users.length})
+            </button>
+          </div>
+
           <div className="flex flex-col gap-4">
-            <div className="card-brutal bg-card p-4">
-              <h2 className="text-sm font-black text-cyan mb-4">CREATE INVITE CODE</h2>
+            {activeTab === 'invites' && (
+              <>
+                <div className="card-brutal bg-card p-4">
+                  <h2 className="text-sm font-black text-cyan mb-4">CREATE INVITE CODE</h2>
               <form onSubmit={handleCreateCode}>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                   <div>
@@ -221,7 +267,74 @@ export default function AdminPage() {
                   ))}
                 </div>
               )}
-            </div>
+                </div>
+              </>
+            )}
+
+            {activeTab === 'users' && (
+              <div className="card-brutal bg-card p-4">
+                <h2 className="text-sm font-black text-purple mb-4">USERS ({users.length})</h2>
+
+                {users.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="font-bold text-sm text-dim">
+                      No users found.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {users.map((userItem, idx) => {
+                      const isCurrentUser = userItem.username === user?.username;
+                      const canDelete = !isCurrentUser && userItem.role !== 'admin';
+                      const bgColors = ['bg-card', 'bg-muted', 'bg-green-100', 'bg-purple-100'];
+                      
+                      return (
+                        <div
+                          key={userItem._id}
+                          className={`card-brutal p-4 ${bgColors[idx % 4]}`}
+                        >
+                          <div className="flex items-center justify-between flex-wrap gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-black text-sm">
+                                {userItem.username}
+                              </span>
+                              <span className={`badge-brutal text-xs text-white ${
+                                userItem.role === 'admin' ? 'bg-purple' : 'bg-cyan'
+                              }`}>
+                                {userItem.role.toUpperCase()}
+                              </span>
+                              {isCurrentUser && (
+                                <span className="badge-brutal text-xs bg-yellow text-dark">
+                                  YOU
+                                </span>
+                              )}
+                            </div>
+                            {canDelete && (
+                              <button
+                                onClick={() => handleDeleteUser(userItem._id, userItem.username)}
+                                className="btn-brutal bg-error text-white text-xs py-1.5 px-3"
+                              >
+                                DELETE
+                              </button>
+                            )}
+                            {!canDelete && !isCurrentUser && (
+                              <span className="text-xs text-dim font-bold">
+                                PROTECTED
+                              </span>
+                            )}
+                          </div>
+                          {userItem.createdAt && (
+                            <div className="text-xs text-dim mt-2">
+                              <span>Joined: <strong>{format(new Date(userItem.createdAt), 'MMM dd, yyyy')}</strong></span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>

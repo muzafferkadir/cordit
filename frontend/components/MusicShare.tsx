@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRoomContext, useLocalParticipant } from '@livekit/components-react';
+import { useState, useEffect, useCallback } from 'react';
+import { useLocalParticipant, useParticipants, useTracks } from '@livekit/components-react';
 import { LocalAudioTrack, Track } from 'livekit-client';
 
 export function MusicShareControls() {
-  const room = useRoomContext();
   const { localParticipant } = useLocalParticipant();
+  const participants = useParticipants();
+  const tracks = useTracks();
   const [isSharing, setIsSharing] = useState(false);
   const [error, setError] = useState('');
   const [musicTrack, setMusicTrack] = useState<LocalAudioTrack | null>(null);
@@ -24,9 +25,25 @@ export function MusicShareControls() {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Check if someone else is already sharing music
+  const isSomeoneElseSharingMusic = useCallback(() => {
+    return participants.some(participant => {
+      if (participant.identity === localParticipant?.identity) return false;
+      return tracks.some(
+        t => t.participant === participant && t.source === Track.Source.ScreenShareAudio
+      );
+    });
+  }, [participants, tracks, localParticipant]);
+
   const startMusicShare = async () => {
     try {
       setError('');
+
+      // Check if someone else is already sharing music
+      if (isSomeoneElseSharingMusic()) {
+        setError('Someone else is already sharing music. Only one person can share music at a time.');
+        return;
+      }
 
       if (!navigator.mediaDevices?.getDisplayMedia) {
         const browserInfo = navigator.userAgent;
@@ -84,8 +101,9 @@ export function MusicShareControls() {
       setIsSharing(true);
 
       console.log('Music sharing started');
-    } catch (error: any) {
-      console.error('Music sharing failed:', error);
+    } catch (err: unknown) {
+      console.error('Music sharing failed:', err);
+      const error = err as { name?: string; message?: string };
 
       if (error.name === 'NotAllowedError') {
         setError('Permission denied - please select a tab and check "Share audio" option');
@@ -93,7 +111,7 @@ export function MusicShareControls() {
         setError('Your browser does not support tab audio capture. Use Chrome/Firefox with HTTPS.');
       } else if (error.name === 'NotFoundError') {
         setError('Audio source not found - make sure to check "Share audio" when selecting tab');
-      } else if (error.name === 'TypeError' && error.message.includes('audio')) {
+      } else if (error.name === 'TypeError' && error.message?.includes('audio')) {
         setError('Audio capture failed - use latest Chrome or Firefox');
       } else {
         setError(`Failed to start music sharing: ${error.message || 'Unknown error'}`);
@@ -101,7 +119,7 @@ export function MusicShareControls() {
     }
   };
 
-  const stopMusicShare = async () => {
+  const stopMusicShare = useCallback(async () => {
     try {
       if (musicTrack) {
         await localParticipant.unpublishTrack(musicTrack);
@@ -114,7 +132,25 @@ export function MusicShareControls() {
     } catch (error) {
       console.error('Error stopping music sharing:', error);
     }
-  };
+  }, [musicTrack, localParticipant]);
+
+  // Monitor if someone else starts sharing music while we're sharing
+  useEffect(() => {
+    if (!isSharing || !localParticipant) return;
+
+    const checkOtherMusic = () => {
+      if (isSomeoneElseSharingMusic()) {
+        // Someone else started sharing, stop our music
+        stopMusicShare();
+        setError('Another person started sharing music. Your music has been stopped.');
+      }
+    };
+
+    // Check periodically
+    const interval = setInterval(checkOtherMusic, 1000);
+
+    return () => clearInterval(interval);
+  }, [isSharing, localParticipant, isSomeoneElseSharingMusic, stopMusicShare]);
 
   useEffect(() => {
     return () => {
