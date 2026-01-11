@@ -1,10 +1,8 @@
 services:
   mongo:
     image: mongo:latest
-    environment:
-      MONGO_INITDB_DATABASE: cordit
     volumes:
-      - mongo-data:/data/db
+      - /var/lib/cordit/mongo:/data/db 
     networks:
       - cordit-network
 
@@ -60,6 +58,3 @@ services:
 networks:
   cordit-network:
     driver: bridge
-
-volumes:
-  mongo-data:
