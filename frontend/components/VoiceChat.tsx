@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { useStore } from '@/lib/store';
 import { roomAPI } from '@/lib/api';
-import { Track, RemoteAudioTrack, Participant } from 'livekit-client';
+import { Track, RemoteAudioTrack, Participant, LocalAudioTrack } from 'livekit-client';
 import {
   LiveKitRoom,
   RoomAudioRenderer,
@@ -18,6 +18,67 @@ function VoiceControls({ onLeave }: { onLeave: () => void }) {
   const room = useRoomContext();
   const { localParticipant } = useLocalParticipant();
   const [isMuted, setIsMuted] = useState(false);
+  const [microphones, setMicrophones] = useState<MediaDeviceInfo[]>([]);
+  const [selectedMicrophone, setSelectedMicrophone] = useState<string>('');
+  const [micPermissionError, setMicPermissionError] = useState('');
+  const [showMicSettings, setShowMicSettings] = useState(false);
+
+  useEffect(() => {
+    const loadMicrophones = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const audioInputs = devices.filter(device => device.kind === 'audioinput');
+        const hasPermission = audioInputs.some(device => device.label.length > 0);
+
+        if (hasPermission) {
+          setMicrophones(audioInputs);
+          if (audioInputs.length > 0 && !selectedMicrophone) {
+            setSelectedMicrophone(audioInputs[0].deviceId);
+          }
+          setMicPermissionError('');
+        } else {
+          setMicrophones([]);
+          setMicPermissionError('');
+        }
+      } catch (error) {
+        console.error('Error loading microphones:', error);
+        setMicrophones([]);
+      }
+    };
+
+    loadMicrophones();
+    navigator.mediaDevices.addEventListener('devicechange', loadMicrophones);
+    return () => {
+      navigator.mediaDevices.removeEventListener('devicechange', loadMicrophones);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const requestMicrophonePermission = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(track => track.stop());
+
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioInputs = devices.filter(device => device.kind === 'audioinput');
+      setMicrophones(audioInputs);
+
+      if (audioInputs.length > 0 && !selectedMicrophone) {
+        setSelectedMicrophone(audioInputs[0].deviceId);
+      }
+
+      setMicPermissionError('');
+      return true;
+    } catch (error) {
+      console.error('Error requesting microphone permission:', error);
+      const err = error as { name?: string };
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setMicPermissionError('Microphone permission denied. Please allow microphone access in your browser settings.');
+      } else {
+        setMicPermissionError('Failed to access microphone. Please check your browser settings.');
+      }
+      return false;
+    }
+  };
 
   useEffect(() => {
     if (!localParticipant) return;
@@ -27,10 +88,8 @@ function VoiceControls({ onLeave }: { onLeave: () => void }) {
       setIsMuted(audioTrack?.isMuted ?? false);
     };
 
-    // Initial state
     updateMuteState();
 
-    // Listen for track publication changes
     const handleTrackPublished = () => updateMuteState();
     const handleTrackUnpublished = () => updateMuteState();
 
@@ -46,11 +105,74 @@ function VoiceControls({ onLeave }: { onLeave: () => void }) {
   const toggleMute = async () => {
     if (!localParticipant) return;
 
-    const audioTrack = localParticipant.getTrackPublication(Track.Source.Microphone);
-    if (audioTrack) {
-      const newMutedState = !audioTrack.isMuted;
-      await localParticipant.setMicrophoneEnabled(!newMutedState);
-      setIsMuted(newMutedState);
+    try {
+      const audioTrack = localParticipant.getTrackPublication(Track.Source.Microphone);
+      if (audioTrack) {
+        const newMutedState = !audioTrack.isMuted;
+        await localParticipant.setMicrophoneEnabled(!newMutedState);
+        setIsMuted(newMutedState);
+      } else {
+        if (microphones.length === 0) {
+          const hasPermission = await requestMicrophonePermission();
+          if (!hasPermission) return;
+        }
+        await localParticipant.setMicrophoneEnabled(true);
+        setIsMuted(false);
+      }
+    } catch (error) {
+      console.error('Error toggling microphone:', error);
+      const err = error as { name?: string };
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setMicPermissionError('Microphone permission denied. Please allow microphone access.');
+      }
+    }
+  };
+
+  const handleMicrophoneChange = async (deviceId: string) => {
+    if (!localParticipant || !room) return;
+
+    try {
+      setSelectedMicrophone(deviceId);
+
+      const currentTrack = localParticipant.getTrackPublication(Track.Source.Microphone);
+      const wasMuted = currentTrack?.isMuted ?? true;
+
+      if (currentTrack?.track) {
+        const trackToStop = currentTrack.track;
+        await localParticipant.unpublishTrack(trackToStop);
+        if (trackToStop && typeof trackToStop.stop === 'function') {
+          trackToStop.stop();
+        }
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          deviceId: { exact: deviceId },
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+
+      const audioTrack = stream.getAudioTracks()[0];
+      if (!audioTrack) throw new Error('No audio track found');
+
+      const livekitTrack = new LocalAudioTrack(audioTrack);
+      await localParticipant.publishTrack(livekitTrack, { source: Track.Source.Microphone });
+
+      if (wasMuted) {
+        await localParticipant.setMicrophoneEnabled(false);
+      }
+
+      setMicPermissionError('');
+    } catch (error) {
+      console.error('Error changing microphone:', error);
+      const err = error as { name?: string };
+      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+        setMicPermissionError('Microphone permission denied. Please allow microphone access.');
+      } else {
+        setMicPermissionError('Failed to switch microphone. Please try again.');
+      }
     }
   };
 
@@ -63,28 +185,76 @@ function VoiceControls({ onLeave }: { onLeave: () => void }) {
 
   return (
     <div style={{ padding: '1.2rem 1.5rem', background: 'var(--bg-card)', borderTop: '3px solid black' }}>
-      <div className="flex gap-3">
+      {micPermissionError && (
+        <div className="mb-3 p-2" style={{ background: 'var(--error)', color: 'white', borderRadius: '4px' }}>
+          <p className="text-xs font-bold">{micPermissionError}</p>
+        </div>
+      )}
+
+      <div className="flex gap-2">
         <button
           onClick={toggleMute}
           className="btn-brutal flex-1"
-          style={{
-            background: isMuted ? 'var(--success)' : 'var(--error)',
-            color: 'white',
-          }}
+          style={{ background: isMuted ? 'var(--success)' : 'var(--error)', color: 'white' }}
         >
           {isMuted ? 'UNMUTE' : 'MUTE'}
         </button>
         <button
           onClick={leaveVoice}
           className="btn-brutal flex-1"
-          style={{
-            background: 'var(--warning)',
-            color: 'white',
-          }}
+          style={{ background: 'var(--warning)', color: 'white' }}
         >
           LEAVE
         </button>
+        <button
+          onClick={async () => {
+            if (!showMicSettings && microphones.length === 0) {
+              await requestMicrophonePermission();
+            }
+            setShowMicSettings(!showMicSettings);
+          }}
+          className="btn-brutal"
+          style={{
+            background: showMicSettings ? 'var(--primary)' : 'var(--bg-secondary)',
+            color: 'black',
+            padding: '0.75rem',
+            minWidth: '44px',
+          }}
+          title="Microphone Settings"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+        </button>
       </div>
+
+      {showMicSettings && (
+        <div className="mt-3 p-3" style={{ background: 'var(--bg-secondary)', borderRadius: '4px', border: '2px solid black' }}>
+          {microphones.length === 0 ? (
+            <p className="text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>
+              No microphone access. Click ⚙️ to request permission.
+            </p>
+          ) : microphones.length === 1 ? (
+            <p className="text-xs font-bold" style={{ color: 'var(--text-secondary)' }}>
+              Using: {microphones[0].label || 'Default Microphone'}
+            </p>
+          ) : (
+            <select
+              value={selectedMicrophone}
+              onChange={(e) => handleMicrophoneChange(e.target.value)}
+              className="input-brutal w-full text-sm"
+              style={{ padding: '0.5rem' }}
+            >
+              {microphones.map((mic) => (
+                <option key={mic.deviceId} value={mic.deviceId}>
+                  {mic.label || `Microphone ${mic.deviceId.slice(0, 8)}`}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -98,7 +268,7 @@ function ParticipantsList({ compact = false }: { compact?: boolean }) {
   const [volumeLevels, setVolumeLevels] = useState<Record<string, number>>({});
   const [musicVolumeLevels, setMusicVolumeLevels] = useState<Record<string, number>>({});
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; participantId: string } | null>(null);
-  
+
   const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
@@ -127,7 +297,6 @@ function ParticipantsList({ compact = false }: { compact?: boolean }) {
       });
     };
   }, [participants]);
-
 
   const handleVolumeChange = (participantId: string, volume: number) => {
     setVolumeLevels(prev => ({ ...prev, [participantId]: volume }));
@@ -159,15 +328,12 @@ function ParticipantsList({ compact = false }: { compact?: boolean }) {
 
   const handleRemoveParticipant = async (participantId: string) => {
     if (!isAdmin || !currentRoom) return;
-    
+
     try {
-      // Find the participant
       const participant = participants.find(p => p.identity === participantId);
       if (!participant) return;
 
-      // Remove participant via API (this will disconnect them and stop their music)
       await roomAPI.removeParticipant(currentRoom._id, participantId);
-      console.log(`Removed participant ${participantId} from room`);
     } catch (error) {
       console.error('Error removing participant:', error);
     }
@@ -216,10 +382,7 @@ function ParticipantsList({ compact = false }: { compact?: boolean }) {
                   {isSharingMusic ? (
                     <span
                       className="badge-brutal text-xs"
-                      style={{
-                        background: 'var(--primary)',
-                        color: 'black',
-                      }}
+                      style={{ background: 'var(--primary)', color: 'black' }}
                     >
                       MUSIC
                     </span>
@@ -236,18 +399,14 @@ function ParticipantsList({ compact = false }: { compact?: boolean }) {
                   )}
                 </div>
               </div>
+
               {isExpanded && (
-                <div
-                  style={{ borderTop: '2px solid rgba(0,0,0,0.1)' }}
-                  onClick={(e) => e.stopPropagation()}
-                >
+                <div style={{ borderTop: '2px solid rgba(0,0,0,0.1)' }} onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center gap-2 mt-2 pt-2">
                     <span className="text-xs font-bold" style={{ minWidth: '32px' }}>
                       {Math.round(volume * 100)}%
                     </span>
-                    <span className="text-xs font-bold opacity-60" style={{ minWidth: '60px' }}>
-                      Voice
-                    </span>
+                    <span className="text-xs font-bold opacity-60" style={{ minWidth: '60px' }}>Voice</span>
                     <input
                       type="range"
                       min="0"
@@ -259,14 +418,13 @@ function ParticipantsList({ compact = false }: { compact?: boolean }) {
                       style={{ accentColor: 'var(--primary)' }}
                     />
                   </div>
+
                   {isSharingMusic && (
                     <div className="flex items-center gap-2 mt-2 pt-2">
                       <span className="text-xs font-bold" style={{ minWidth: '32px' }}>
                         {Math.round(musicVolume * 100)}%
                       </span>
-                      <span className="text-xs font-bold opacity-60" style={{ minWidth: '60px' }}>
-                        Music
-                      </span>
+                      <span className="text-xs font-bold opacity-60" style={{ minWidth: '60px' }}>Music</span>
                       <input
                         type="range"
                         min="0"
@@ -279,16 +437,13 @@ function ParticipantsList({ compact = false }: { compact?: boolean }) {
                       />
                     </div>
                   )}
+
                   {canRemove && (
                     <div className="mt-2 pt-2" style={{ borderTop: '2px solid rgba(0,0,0,0.1)' }}>
                       <button
                         onClick={() => handleRemoveParticipant(participant.identity)}
                         className="btn-brutal w-full text-xs"
-                        style={{
-                          background: 'var(--error)',
-                          color: 'white',
-                          padding: '0.5rem',
-                        }}
+                        style={{ background: 'var(--error)', color: 'white', padding: '0.5rem' }}
                       >
                         REMOVE FROM ROOM
                       </button>
@@ -341,9 +496,7 @@ function VoiceConnected({ onLeave, isMobile = false, externalMuteTrigger, onMute
     <div className="h-full flex flex-col" style={{ background: 'var(--bg-secondary)' }}>
       <div className="gradient-yellow" style={{ padding: '1rem 1.5rem', borderBottom: '3px solid black' }}>
         <h3 className="text-xl font-black">VOICE CHAT</h3>
-        <p className="text-xs font-bold opacity-80 mt-1">
-          {currentRoom?.name}
-        </p>
+        <p className="text-xs font-bold opacity-80 mt-1">{currentRoom?.name}</p>
       </div>
 
       <div className="flex-1 overflow-y-auto">
@@ -351,9 +504,7 @@ function VoiceConnected({ onLeave, isMobile = false, externalMuteTrigger, onMute
       </div>
 
       <MusicShareControls />
-
       <VoiceControls onLeave={onLeave} />
-
       <RoomAudioRenderer />
     </div>
   );
@@ -382,8 +533,26 @@ export default function VoiceChat({
   const [livekitUrl, setLivekitUrl] = useState<string>('');
   const [error, setError] = useState('');
   const [connecting, setConnecting] = useState(false);
+  const [selectedMicrophoneId, setSelectedMicrophoneId] = useState<string>('');
 
-  // Reset state when room changes
+  useEffect(() => {
+    const checkMicrophonePermission = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const audioInputs = devices.filter(device => device.kind === 'audioinput');
+        const hasPermission = audioInputs.some(device => device.label.length > 0);
+
+        if (hasPermission && audioInputs.length > 0) {
+          setSelectedMicrophoneId(audioInputs[0].deviceId);
+        }
+      } catch (error) {
+        console.error('Error checking microphone:', error);
+      }
+    };
+
+    checkMicrophonePermission();
+  }, []);
+
   useEffect(() => {
     setIsJoined(false);
     setLivekitToken(null);
@@ -470,19 +639,16 @@ export default function VoiceChat({
 
         <div className="flex-1 flex items-center justify-center" style={{ padding: '1.5rem' }}>
           <div className="text-center w-full">
-            {error ? (
+            {error && (
               <div style={{ marginBottom: '1rem' }}>
                 <p className="font-bold text-sm" style={{ color: 'var(--error)' }}>{error}</p>
               </div>
-            ) : null}
+            )}
             <button
               onClick={joinVoice}
               disabled={connecting}
               className="btn-brutal w-full"
-              style={{
-                background: 'var(--success)',
-                color: 'white',
-              }}
+              style={{ background: 'var(--success)', color: 'white' }}
             >
               {connecting ? 'CONNECTING...' : 'JOIN VOICE'}
             </button>
@@ -498,12 +664,26 @@ export default function VoiceChat({
         token={livekitToken}
         serverUrl={livekitUrl}
         connect={true}
-        audio={{ noiseSuppression: true, echoCancellation: true, autoGainControl: true }}
+        audio={selectedMicrophoneId ? {
+          deviceId: selectedMicrophoneId,
+          noiseSuppression: true,
+          echoCancellation: true,
+          autoGainControl: true,
+        } : {
+          noiseSuppression: true,
+          echoCancellation: true,
+          autoGainControl: true,
+        }}
         video={false}
         className={isMobile ? '' : 'h-full'}
         onError={(err) => {
           console.error('LiveKit connection error:', err);
-          setError('Voice server unavailable');
+          const error = err as { message?: string };
+          if (error.message?.includes('microphone') || error.message?.includes('permission')) {
+            setError('Microphone permission denied. Please allow microphone access.');
+          } else {
+            setError('Voice server unavailable');
+          }
           leaveVoice();
         }}
         onDisconnected={() => {

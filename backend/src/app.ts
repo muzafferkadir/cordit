@@ -24,23 +24,21 @@ app.set('trust proxy', 1);
 
 app.use(helmet());
 
-const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  message: { error: 'Too many requests, please try again later.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 10,
-  message: { error: 'Too many login attempts, please try again after 15 minutes.' },
+  message: { error: 'Too many attempts, please try again after 15 minutes.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
-app.use(generalLimiter);
+const generalLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 120, // 120 requests per minute per IP (2 per second average)
+  message: { error: 'Too many requests, please slow down.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: false }));
@@ -81,10 +79,11 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// Use Stricter Rate Limiting for Auth Routes
+app.use(generalLimiter);
 app.use('/user/login', authLimiter);
 app.use('/user/register', authLimiter);
 
+// Routes
 app.use('/user', userRoutes);
 app.use('/room', roomRoutes);
 app.use('/message', messageRoutes);
@@ -113,4 +112,3 @@ httpServer.listen(PORT, () => {
 
 export default app;
 export { io };
-
