@@ -8,11 +8,15 @@ services:
 
   livekit:
     image: livekit/livekit-server:latest
-    command: --dev
+    command: --config /etc/livekit.yaml
     environment:
       LIVEKIT_KEYS: "${LIVEKIT_API_KEY}: ${LIVEKIT_API_SECRET}"
-    expose:
-      - "7880"
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+    ports:
+      - "7880:7880"
+      - "7881:7881"
+      - "7882:7882/udp"
     networks:
       - cordit-network
 
