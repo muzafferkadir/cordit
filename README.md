@@ -44,6 +44,34 @@ Cordit is a lightweight communication platform with text chat, voice channels, a
 
 ---
 
+## Roadmap
+- [x] Real-time messaging with Socket.io
+- [x] Multiple chat rooms
+- [x] Typing indicators
+- [x] Message history
+- [x] Voice channels with LiveKit
+- [x] Individual volume controls
+- [x] Speaking indicators
+- [x] Music sharing from browser tabs
+- [x] JWT authentication
+- [x] Admin panel
+- [x] Invite code system
+- [x] Rate limiting
+- [x] Responsive design
+- [x] Docker deployment
+- [ ] Create new channels (text & voice)
+- [ ] File & image uploads
+- [ ] Emoji reactions
+- [ ] Edit/delete messages
+- [ ] @mention system
+- [ ] Direct messages (DM)
+- [ ] User avatars & status
+- [ ] Push notifications
+- [ ] Screen sharing
+- [ ] Role/permission system
+
+---
+
 ## Quick Start
 
 ### Option 1: Docker (Recommended)
