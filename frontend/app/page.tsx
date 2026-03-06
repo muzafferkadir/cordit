@@ -187,7 +187,13 @@ export default function Home() {
     );
   }
 
-  if (!user) return null;
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-surface">
+        <div className="text-2xl font-black">LOADING...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col mobile-container bg-surface">
