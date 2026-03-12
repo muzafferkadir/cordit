@@ -42,7 +42,8 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    if (error.response?.status === 401 && typeof window !== 'undefined' && !originalRequest._retry) {
+    const isRefreshRequest = originalRequest.url?.includes('/user/refresh');
+    if (error.response?.status === 401 && typeof window !== 'undefined' && !originalRequest._retry && !isRefreshRequest) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
