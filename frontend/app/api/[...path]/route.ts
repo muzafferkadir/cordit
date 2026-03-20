@@ -2,129 +2,72 @@ import { NextRequest } from 'next/server';
 
 const BACKEND_URL = process.env.BACKEND_INTERNAL_URL || 'http://localhost:3000';
 
-export async function GET(
-    request: NextRequest,
-    { params }: { params: Promise<{ path: string[] }> }
+async function proxy(
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE',
+  request: NextRequest,
+  params: Promise<{ path: string[] }>,
 ) {
-    const { path } = await params;
-    const pathname = path.join('/');
-    const searchParams = request.nextUrl.searchParams.toString();
-    const url = `${BACKEND_URL}/${pathname}${searchParams ? `?${searchParams}` : ''}`;
+  const { path } = await params;
+  const pathname = path.join('/');
+  const searchParams = request.nextUrl.searchParams.toString();
+  const url = `${BACKEND_URL}/${pathname}${searchParams ? `?${searchParams}` : ''}`;
 
-    const headers = new Headers();
-    request.headers.forEach((value, key) => {
-        if (key.toLowerCase() !== 'host') {
-            headers.set(key, value);
-        }
-    });
+  const headers = new Headers();
+  request.headers.forEach((value, key) => {
+    const lower = key.toLowerCase();
+    if (lower === 'host' || lower === 'content-length') return;
+    headers.set(key, value);
+  });
 
-    const response = await fetch(url, {
-        method: 'GET',
-        headers,
-    });
+  const init: RequestInit = {
+    method,
+    headers,
+  };
 
-    const data = await response.text();
+  if (method === 'POST' || method === 'PUT') {
+    const body = await request.arrayBuffer();
+    init.body = body;
+  }
 
-    return new Response(data, {
-        status: response.status,
-        headers: {
-            'Content-Type': response.headers.get('Content-Type') || 'application/json',
-        },
-    });
+  const response = await fetch(url, init);
+  const data = await response.arrayBuffer();
+
+  const responseHeaders = new Headers();
+  response.headers.forEach((value, key) => {
+    if (key.toLowerCase() === 'content-length') return;
+    responseHeaders.set(key, value);
+  });
+
+  return new Response(data, {
+    status: response.status,
+    headers: responseHeaders,
+  });
+}
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ path: string[] }> },
+) {
+  return proxy('GET', request, params);
 }
 
 export async function POST(
-    request: NextRequest,
-    { params }: { params: Promise<{ path: string[] }> }
+  request: NextRequest,
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
-    const { path } = await params;
-    const pathname = path.join('/');
-    const url = `${BACKEND_URL}/${pathname}`;
-
-    const headers = new Headers();
-    request.headers.forEach((value, key) => {
-        if (key.toLowerCase() !== 'host') {
-            headers.set(key, value);
-        }
-    });
-
-    const body = await request.text();
-
-    const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body,
-    });
-
-    const data = await response.text();
-
-    return new Response(data, {
-        status: response.status,
-        headers: {
-            'Content-Type': response.headers.get('Content-Type') || 'application/json',
-        },
-    });
+  return proxy('POST', request, params);
 }
 
 export async function PUT(
-    request: NextRequest,
-    { params }: { params: Promise<{ path: string[] }> }
+  request: NextRequest,
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
-    const { path } = await params;
-    const pathname = path.join('/');
-    const url = `${BACKEND_URL}/${pathname}`;
-
-    const headers = new Headers();
-    request.headers.forEach((value, key) => {
-        if (key.toLowerCase() !== 'host') {
-            headers.set(key, value);
-        }
-    });
-
-    const body = await request.text();
-
-    const response = await fetch(url, {
-        method: 'PUT',
-        headers,
-        body,
-    });
-
-    const data = await response.text();
-
-    return new Response(data, {
-        status: response.status,
-        headers: {
-            'Content-Type': response.headers.get('Content-Type') || 'application/json',
-        },
-    });
+  return proxy('PUT', request, params);
 }
 
 export async function DELETE(
-    request: NextRequest,
-    { params }: { params: Promise<{ path: string[] }> }
+  request: NextRequest,
+  { params }: { params: Promise<{ path: string[] }> },
 ) {
-    const { path } = await params;
-    const pathname = path.join('/');
-    const url = `${BACKEND_URL}/${pathname}`;
-
-    const headers = new Headers();
-    request.headers.forEach((value, key) => {
-        if (key.toLowerCase() !== 'host') {
-            headers.set(key, value);
-        }
-    });
-
-    const response = await fetch(url, {
-        method: 'DELETE',
-        headers,
-    });
-
-    const data = await response.text();
-
-    return new Response(data, {
-        status: response.status,
-        headers: {
-            'Content-Type': response.headers.get('Content-Type') || 'application/json',
-        },
-    });
+  return proxy('DELETE', request, params);
 }

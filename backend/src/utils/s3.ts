@@ -76,8 +76,8 @@ export async function generateUploadUrl(
     ContentLength: fileSize,
   });
 
-  const url = await getSignedUrl(s3Client, command, { expiresIn: config.upload.uploadUrlExpirySeconds });
-  return toPublicEndpoint(url);
+  // Keep original signed host for upload URLs. Rewriting host breaks AWS signature validation.
+  return getSignedUrl(s3Client, command, { expiresIn: config.upload.uploadUrlExpirySeconds });
 }
 
 export async function generateDownloadUrl(key: string): Promise<string> {
