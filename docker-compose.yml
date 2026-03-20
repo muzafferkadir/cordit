@@ -2,7 +2,21 @@ services:
   mongo:
     image: mongo:latest
     volumes:
-      - /var/lib/cordit/mongo:/data/db 
+      - /var/lib/cordit/mongo:/data/db
+    networks:
+      - cordit-network
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    volumes:
+      - /var/lib/cordit/minio:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
     networks:
       - cordit-network
 
@@ -23,6 +37,7 @@ services:
     depends_on:
       - mongo
       - livekit
+      - minio
     environment:
       DATABASE_URL: mongodb://mongo:27017/cordit
       LIVEKIT_API_URL: http://livekit:7880
@@ -34,6 +49,11 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
       LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET: cordit-uploads
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://localhost:9000}
     expose:
       - "3000"
     networks:

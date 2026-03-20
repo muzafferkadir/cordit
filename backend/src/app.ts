@@ -12,10 +12,12 @@ import userRoutes from './routes/user';
 import roomRoutes from './routes/room';
 import messageRoutes from './routes/message';
 import inviteCodeRoutes from './routes/inviteCode';
+import uploadRoutes from './routes/upload';
 import createAdmin from './utils/createAdmin';
 import createDefaultRoom from './utils/createDefaultRoom';
 import { logger } from './utils/logger';
 import { initializeSocket } from './utils/socket';
+import { initBucket } from './utils/s3';
 
 const app: Application = express();
 const httpServer = createServer(app);
@@ -88,6 +90,7 @@ app.use('/user', userRoutes);
 app.use('/room', roomRoutes);
 app.use('/message', messageRoutes);
 app.use('/invite', inviteCodeRoutes);
+app.use('/upload', uploadRoutes);
 
 db.once('open', async () => {
   logger.info('MongoDB connected successfully');
@@ -97,6 +100,10 @@ db.once('open', async () => {
   }
 
   await createDefaultRoom();
+
+  initBucket().catch((err) => {
+    logger.warn('Failed to initialize S3 bucket (MinIO may not be running):', err);
+  });
 });
 
 const io = initializeSocket(httpServer);

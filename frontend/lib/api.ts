@@ -214,4 +214,45 @@ export const inviteAPI = {
   },
 };
 
+export const uploadAPI = {
+  requestUpload: async (fileName: string, mimeType: string, fileSize: number) => {
+    const { data } = await api.post('/upload/request', { fileName, mimeType, fileSize });
+    return data;
+  },
+
+  uploadToS3: async (
+    url: string,
+    file: File,
+    onProgress?: (percent: number) => void,
+  ): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('PUT', url);
+      xhr.setRequestHeader('Content-Type', file.type);
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && onProgress) {
+          onProgress(Math.round((event.loaded / event.total) * 100));
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve();
+        } else {
+          reject(new Error(`Upload failed with status ${xhr.status}`));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error('Upload failed'));
+      xhr.send(file);
+    });
+  },
+
+  getDownloadUrl: async (fileId: string) => {
+    const { data } = await api.get(`/upload/${fileId}`);
+    return data;
+  },
+};
+
 export default api;

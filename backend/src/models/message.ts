@@ -1,11 +1,20 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 
+export interface IAttachment {
+  fileId: Types.ObjectId;
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+  s3Key: string;
+}
+
 export interface IMessage extends Document {
   roomId: Types.ObjectId;
   userId: Types.ObjectId;
   username: string;
   text: string;
-  messageType: 'text' | 'system';
+  messageType: 'text' | 'system' | 'media';
+  attachment?: IAttachment;
   isDeleted: boolean;
   deletedAt?: Date;
   deletedBy?: Types.ObjectId;
@@ -31,13 +40,20 @@ const messageSchema = new Schema<IMessage>(
     },
     text: {
       type: String,
-      required: true,
+      default: '',
       maxlength: 2000,
     },
     messageType: {
       type: String,
-      enum: ['text', 'system'],
+      enum: ['text', 'system', 'media'],
       default: 'text',
+    },
+    attachment: {
+      fileId: { type: Schema.Types.ObjectId, ref: 'FileUpload' },
+      fileName: { type: String },
+      mimeType: { type: String },
+      fileSize: { type: Number },
+      s3Key: { type: String },
     },
     isDeleted: {
       type: Boolean,

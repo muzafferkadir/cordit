@@ -7,6 +7,26 @@ import { inviteAPI, userAPI } from '@/lib/api';
 import { format } from 'date-fns';
 import type { InviteCode, UserListItem } from '@/lib/types';
 
+type ApiErrorShape = {
+  response?: {
+    data?: {
+      error?: string;
+    };
+  };
+};
+
+const getApiErrorMessage = (error: unknown, fallback: string) => {
+  if (typeof error === 'object' && error !== null) {
+    const maybeApiError = error as ApiErrorShape;
+    const message = maybeApiError.response?.data?.error;
+    if (typeof message === 'string' && message.length > 0) {
+      return message;
+    }
+  }
+
+  return fallback;
+};
+
 export default function AdminPage() {
   const router = useRouter();
   const { user, logout } = useStore();
@@ -40,8 +60,8 @@ export default function AdminPage() {
     try {
       const data = await inviteAPI.getAll();
       setInviteCodes(data.inviteCodes);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to load invite codes');
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Failed to load invite codes'));
     } finally {
       setLoading(false);
     }
@@ -51,8 +71,8 @@ export default function AdminPage() {
     try {
       const data = await userAPI.getAll();
       setUsers(data.users);
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to load users');
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Failed to load users'));
     }
   };
 
@@ -68,8 +88,8 @@ export default function AdminPage() {
       setExpiresInHours(1);
       setMaxUses(1);
       await loadInviteCodes();
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to create invite code');
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Failed to create invite code'));
     } finally {
       setCreating(false);
     }
@@ -82,8 +102,8 @@ export default function AdminPage() {
       await inviteAPI.delete(code);
       setSuccess(`Deleted code: ${code}`);
       await loadInviteCodes();
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to delete code');
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Failed to delete code'));
     }
   };
 
@@ -94,8 +114,8 @@ export default function AdminPage() {
       await userAPI.delete(userId);
       setSuccess(`Deleted user: ${username}`);
       await loadUsers();
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to delete user');
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Failed to delete user'));
     }
   };
 

@@ -6,6 +6,26 @@ import Link from 'next/link';
 import { authAPI } from '@/lib/api';
 import { useStore } from '@/lib/store';
 
+type ApiErrorShape = {
+  response?: {
+    data?: {
+      error?: string;
+    };
+  };
+};
+
+const getApiErrorMessage = (error: unknown, fallback: string) => {
+  if (typeof error === 'object' && error !== null) {
+    const maybeApiError = error as ApiErrorShape;
+    const message = maybeApiError.response?.data?.error;
+    if (typeof message === 'string' && message.length > 0) {
+      return message;
+    }
+  }
+
+  return fallback;
+};
+
 export default function LoginPage() {
   const router = useRouter();
   const setUser = useStore((state) => state.setUser);
@@ -33,8 +53,8 @@ export default function LoginPage() {
       setUser(user);
 
       router.push('/');
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Login failed');
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Login failed'));
     } finally {
       setLoading(false);
     }

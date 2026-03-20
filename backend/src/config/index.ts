@@ -33,10 +33,24 @@ export const config: {
         apiKey: string;
         apiSecret: string;
     };
+    minio: {
+        endpoint: string;
+        publicEndpoint: string;
+        accessKey: string;
+        secretKey: string;
+        bucket: string;
+        region: string;
+    };
     admin: {
         createInitially: boolean;
         username: string;
         password: string;
+    };
+    upload: {
+        fileExpiryHours: number;
+        uploadUrlExpirySeconds: number;
+        downloadUrlExpirySeconds: number;
+        lifecycleExpiryDays: number;
     };
     inviteCodeExpiryHours: number;
 } = {
@@ -57,10 +71,24 @@ export const config: {
         apiKey: process.env.LIVEKIT_API_KEY || 'devkey',
         apiSecret: process.env.LIVEKIT_API_SECRET || 'secret',
     },
+    minio: {
+        endpoint: process.env.MINIO_ENDPOINT || 'http://localhost:9000',
+        publicEndpoint: process.env.MINIO_PUBLIC_ENDPOINT || 'http://localhost:9000',
+        accessKey: process.env.MINIO_ACCESS_KEY || 'minioadmin',
+        secretKey: process.env.MINIO_SECRET_KEY || 'minioadmin',
+        bucket: process.env.MINIO_BUCKET || 'cordit-uploads',
+        region: process.env.MINIO_REGION || 'us-east-1',
+    },
     admin: {
         createInitially: process.env.CREATE_ADMIN_INITIALLY === 'true',
         username: process.env.ADMIN_USERNAME || 'admin',
         password: process.env.ADMIN_PASSWORD || 'admin123',
+    },
+    upload: {
+        fileExpiryHours: Math.max(1, parseInt(process.env.UPLOAD_FILE_EXPIRY_HOURS || '24', 10)),
+        uploadUrlExpirySeconds: Math.max(60, parseInt(process.env.UPLOAD_URL_EXPIRY_SECONDS || '600', 10)),
+        downloadUrlExpirySeconds: Math.max(60, parseInt(process.env.DOWNLOAD_URL_EXPIRY_SECONDS || '3600', 10)),
+        lifecycleExpiryDays: Math.max(1, parseInt(process.env.UPLOAD_LIFECYCLE_EXPIRY_DAYS || '1', 10)),
     },
     inviteCodeExpiryHours: parseInt(process.env.INVITE_CODE_EXPIRY_HOURS || '24', 10),
 };

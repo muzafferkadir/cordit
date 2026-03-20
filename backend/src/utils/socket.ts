@@ -15,9 +15,18 @@ interface JoinRoomData {
   roomId: string;
 }
 
+interface AttachmentData {
+  fileId: string;
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+  s3Key: string;
+}
+
 interface SendMessageData {
   roomId: string;
   text: string;
+  attachment?: AttachmentData;
 }
 
 interface TypingData {
@@ -110,14 +119,17 @@ export const initializeSocket = (httpServer: HTTPServer) => {
     // Send message
     socket.on('send_message', async (data: SendMessageData) => {
       try {
-        const { roomId, text } = data;
+        const { roomId, text, attachment } = data;
 
-        if (!text || text.trim().length === 0) {
-          socket.emit('error', { message: 'Message text is required' });
+        const hasAttachment = attachment && attachment.fileId;
+        const hasText = text && text.trim().length > 0;
+
+        if (!hasText && !hasAttachment) {
+          socket.emit('error', { message: 'Message text or attachment is required' });
           return;
         }
 
-        if (text.length > 2000) {
+        if (text && text.length > 2000) {
           socket.emit('error', { message: 'Message too long (max 2000 characters)' });
           return;
         }
@@ -146,18 +158,29 @@ export const initializeSocket = (httpServer: HTTPServer) => {
         }
 
         // Save message to database
-        const message = new Message({
+        const messageData: Record<string, unknown> = {
           roomId,
           userId: user._id,
           username: socket.username,
-          text: text.trim(),
-          messageType: 'text',
-        });
+          text: hasText ? text.trim() : '',
+          messageType: hasAttachment ? 'media' : 'text',
+        };
 
+        if (hasAttachment) {
+          messageData.attachment = {
+            fileId: attachment.fileId,
+            fileName: attachment.fileName,
+            mimeType: attachment.mimeType,
+            fileSize: attachment.fileSize,
+            s3Key: attachment.s3Key,
+          };
+        }
+
+        const message = new Message(messageData);
         await message.save();
 
         // Broadcast message to all users in room
-        io.to(roomId).emit('new_message', {
+        const emitData: Record<string, unknown> = {
           _id: message._id,
           roomId: message.roomId,
           userId: message.userId,
@@ -165,9 +188,15 @@ export const initializeSocket = (httpServer: HTTPServer) => {
           text: message.text,
           messageType: message.messageType,
           createdAt: message.createdAt,
-        });
+        };
 
-        logger.info(`Message sent in room ${roomId} by ${socket.username}`);
+        if (message.attachment) {
+          emitData.attachment = message.attachment;
+        }
+
+        io.to(roomId).emit('new_message', emitData);
+
+        logger.info(`Message sent in room ${roomId} by ${socket.username} (type: ${message.messageType})`);
       } catch (error) {
         logger.error('Error sending message:', error);
         socket.emit('error', { message: 'Failed to send message' });

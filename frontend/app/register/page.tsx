@@ -6,6 +6,27 @@ import Link from 'next/link';
 import { authAPI, inviteAPI } from '@/lib/api';
 import { useStore } from '@/lib/store';
 
+type ApiErrorShape = {
+  response?: {
+    data?: {
+      error?: string;
+      message?: string;
+    };
+  };
+};
+
+const getApiErrorMessage = (error: unknown, fallback: string) => {
+  if (typeof error === 'object' && error !== null) {
+    const maybeApiError = error as ApiErrorShape;
+    const message = maybeApiError.response?.data?.error ?? maybeApiError.response?.data?.message;
+    if (typeof message === 'string' && message.length > 0) {
+      return message;
+    }
+  }
+
+  return fallback;
+};
+
 export default function RegisterPage() {
   const router = useRouter();
   const setUser = useStore((state) => state.setUser);
@@ -32,7 +53,7 @@ export default function RegisterPage() {
       } else {
         setError('');
       }
-    } catch (err) {
+    } catch {
       setCodeValid(false);
       setError('Failed to validate code');
     } finally {
@@ -70,9 +91,8 @@ export default function RegisterPage() {
       setUser(user);
 
       router.push('/');
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.error || err.response?.data?.message || 'Registration failed';
-      setError(errorMsg);
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, 'Registration failed'));
     } finally {
       setLoading(false);
     }

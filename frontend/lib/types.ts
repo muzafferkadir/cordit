@@ -23,13 +23,22 @@ export interface Room {
   updatedAt: string;
 }
 
+export interface FileAttachment {
+  fileId: string;
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+  s3Key: string;
+}
+
 export interface Message {
   _id: string;
   roomId: string;
   userId: string;
   username: string;
   text: string;
-  messageType: 'text' | 'system';
+  messageType: 'text' | 'system' | 'media';
+  attachment?: FileAttachment;
   createdAt: string;
   updatedAt: string;
 }

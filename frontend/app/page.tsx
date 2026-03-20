@@ -1,16 +1,18 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useCallback, useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useStore } from '@/lib/store';
 import { useSocket } from '@/lib/useSocket';
-import { roomAPI, messageAPI } from '@/lib/api';
+import { roomAPI, messageAPI, uploadAPI } from '@/lib/api';
 import { format } from 'date-fns';
+import type { FileAttachment } from '@/lib/types';
 import VoiceChat from '@/components/VoiceChat';
 import MobileNav from '@/components/MobileNav';
 import RoomsSidebar from '@/components/RoomsSidebar';
 import HamburgerMenu from '@/components/HamburgerMenu';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import MediaMessage from '@/components/MediaMessage';
 
 export default function Home() {
   const router = useRouter();
@@ -30,8 +32,29 @@ export default function Home() {
   const [muteTrigger, setMuteTrigger] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ isOpen: boolean; messageId: string | null }>({ isOpen: false, messageId: null });
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [mediaUrls, setMediaUrls] = useState<Record<string, string>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const selectRoom = useCallback(async (roomId: string) => {
+    try {
+      const room = rooms.find(r => r._id === roomId);
+      if (!room) return;
+
+      setCurrentRoom(room);
+
+      const data = await messageAPI.getByRoom(roomId);
+      setMessages(data.messages);
+
+      await roomAPI.join(roomId);
+    } catch (error) {
+      console.error('Failed to join room:', error);
+    }
+  }, [rooms, setCurrentRoom, setMessages]);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -58,7 +81,7 @@ export default function Home() {
     };
 
     loadRooms();
-  }, [user]);
+  }, [currentRoom, selectRoom, setRooms, user]);
 
   useEffect(() => {
     if (!user) return;
@@ -79,39 +102,94 @@ export default function Home() {
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [user, currentRoom]);
+  }, [currentRoom, setMessages, setRooms, user]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const selectRoom = async (roomId: string) => {
-    try {
-      const room = rooms.find(r => r._id === roomId);
-      if (!room) return;
+  const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 
-      setCurrentRoom(room);
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-      const data = await messageAPI.getByRoom(roomId);
-      setMessages(data.messages);
+    setUploadError(null);
 
-      await roomAPI.join(roomId);
-    } catch (error) {
-      console.error('Failed to join room:', error);
+    if (file.size > MAX_FILE_SIZE) {
+      setUploadError('File too large (max 100MB)');
+      return;
     }
+
+    const allowedPrefixes = ['image/', 'video/', 'audio/'];
+    if (!allowedPrefixes.some((p) => file.type.startsWith(p))) {
+      setUploadError('Only image, video, and audio files are allowed');
+      return;
+    }
+
+    setPendingFile(file);
+    // Reset input so same file can be re-selected
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const cancelPendingFile = () => {
+    setPendingFile(null);
+    setUploadError(null);
+    setUploadProgress(null);
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes}B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!messageText.trim() || sendingMessage) return;
+    if ((!messageText.trim() && !pendingFile) || sendingMessage) return;
 
     setSendingMessage(true);
+    setUploadError(null);
+
     try {
-      sendMessage(messageText.trim());
+      let attachment: FileAttachment | undefined;
+
+      if (pendingFile) {
+        setUploadProgress(0);
+
+        // Request presigned URL
+        const uploadData = await uploadAPI.requestUpload(
+          pendingFile.name,
+          pendingFile.type,
+          pendingFile.size,
+        );
+
+        // Upload file to S3
+        await uploadAPI.uploadToS3(uploadData.uploadUrl, pendingFile, setUploadProgress);
+
+        attachment = {
+          fileId: uploadData.fileId,
+          fileName: pendingFile.name,
+          mimeType: pendingFile.type,
+          fileSize: pendingFile.size,
+          s3Key: '', // not needed for frontend
+        };
+
+        // Cache the download URL
+        setMediaUrls((prev) => ({ ...prev, [uploadData.fileId]: uploadData.downloadUrl }));
+
+        setPendingFile(null);
+        setUploadProgress(null);
+      }
+
+      sendMessage(messageText.trim(), attachment);
       setMessageText('');
       stopTyping();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Failed to send message:', error);
+      const errMsg = error instanceof Error ? error.message : 'Upload failed';
+      setUploadError(errMsg);
+      setUploadProgress(null);
     } finally {
       setSendingMessage(false);
     }
@@ -264,7 +342,7 @@ export default function Home() {
                   This feature is coming soon!
                 </p>
                 <p className="font-medium text-sm mb-6 text-dim">
-                  You'll be able to create custom rooms with voice chat support, set descriptions, and invite members.
+                  You&apos;ll be able to create custom rooms with voice chat support, set descriptions, and invite members.
                 </p>
                 <button
                   onClick={() => setShowCreateRoom(false)}
@@ -308,7 +386,14 @@ export default function Home() {
                           </span>
                         </div>
                       </div>
-                      <p className="font-medium text-sm">{msg.text}</p>
+                      {msg.text && <p className="font-medium text-sm">{msg.text}</p>}
+                      {msg.attachment && (
+                        <MediaMessage
+                          attachment={msg.attachment}
+                          cachedUrl={mediaUrls[msg.attachment.fileId]}
+                          onUrlLoaded={(fileId, url) => setMediaUrls((prev) => ({ ...prev, [fileId]: url }))}
+                        />
+                      )}
                     </div>
                   ))}
                 </div>
@@ -324,7 +409,43 @@ export default function Home() {
                     }
                   </div>
                 )}
+                {uploadError && (
+                  <div className="text-xs font-bold mb-2 text-error">{uploadError}</div>
+                )}
+                {pendingFile && (
+                  <div className="flex items-center gap-2 mb-2 p-2 border-2 border-black bg-surface" style={{ borderRadius: 0 }}>
+                    <span className="text-xs font-bold truncate flex-1">{pendingFile.name}</span>
+                    <span className="badge-brutal text-xs bg-card px-1 py-0">{formatFileSize(pendingFile.size)}</span>
+                    <button type="button" onClick={cancelPendingFile} className="btn-brutal bg-error text-white px-2 py-1 text-xs">X</button>
+                  </div>
+                )}
+                {uploadProgress !== null && (
+                  <div className="mb-2">
+                    <div className="w-full h-3 border-2 border-black bg-surface" style={{ borderRadius: 0 }}>
+                      <div className="h-full bg-success transition-all" style={{ width: `${uploadProgress}%`, borderRadius: 0 }} />
+                    </div>
+                    <span className="text-xs font-bold">{uploadProgress}%</span>
+                  </div>
+                )}
                 <div className="flex gap-3">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*,video/*,audio/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={sendingMessage}
+                    className="btn-brutal bg-purple text-white px-3 min-h-11"
+                    title="Attach file"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
+                    </svg>
+                  </button>
                   <input
                     type="text"
                     value={messageText}
@@ -336,10 +457,10 @@ export default function Home() {
                   />
                   <button
                     type="submit"
-                    disabled={sendingMessage || !messageText.trim()}
-                    className={`btn-brutal min-w-24 ${messageText.trim() ? 'bg-success text-white' : 'bg-gray-200 text-gray-500'}`}
+                    disabled={sendingMessage || (!messageText.trim() && !pendingFile)}
+                    className={`btn-brutal min-w-24 ${(messageText.trim() || pendingFile) ? 'bg-success text-white' : 'bg-gray-200 text-gray-500'}`}
                   >
-                    {sendingMessage ? 'SENDING...' : 'SEND'}
+                    {uploadProgress !== null ? `${uploadProgress}%` : sendingMessage ? 'SENDING...' : 'SEND'}
                   </button>
                 </div>
               </form>
@@ -458,7 +579,14 @@ export default function Home() {
                       </span>
                     </div>
                   </div>
-                  <p className="font-medium text-sm">{msg.text}</p>
+                  {msg.text && <p className="font-medium text-sm">{msg.text}</p>}
+                  {msg.attachment && (
+                    <MediaMessage
+                      attachment={msg.attachment}
+                      cachedUrl={mediaUrls[msg.attachment.fileId]}
+                      onUrlLoaded={(fileId, url) => setMediaUrls((prev) => ({ ...prev, [fileId]: url }))}
+                    />
+                  )}
                 </div>
               ))}
             </div>
@@ -474,7 +602,37 @@ export default function Home() {
                 }
               </div>
             )}
+            {uploadError && (
+              <div className="text-xs font-bold mb-2 text-error">{uploadError}</div>
+            )}
+            {pendingFile && (
+              <div className="flex items-center gap-2 mb-2 p-2 border-2 border-black bg-surface" style={{ borderRadius: 0 }}>
+                <span className="text-xs font-bold truncate flex-1">{pendingFile.name}</span>
+                <span className="badge-brutal text-xs bg-card px-1 py-0">{formatFileSize(pendingFile.size)}</span>
+                <button type="button" onClick={cancelPendingFile} className="btn-brutal bg-error text-white px-2 py-1 text-xs">X</button>
+              </div>
+            )}
+            {uploadProgress !== null && (
+              <div className="mb-2">
+                <div className="w-full h-3 border-2 border-black bg-surface" style={{ borderRadius: 0 }}>
+                  <div className="h-full bg-success transition-all" style={{ width: `${uploadProgress}%`, borderRadius: 0 }} />
+                </div>
+                <span className="text-xs font-bold">{uploadProgress}%</span>
+              </div>
+            )}
             <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={sendingMessage}
+                className="btn-brutal px-3 min-h-11"
+                style={{ background: 'var(--purple)', color: 'white' }}
+                title="Attach file"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48" />
+                </svg>
+              </button>
               <input
                 type="text"
                 value={messageText}
@@ -487,14 +645,14 @@ export default function Home() {
               />
               <button
                 type="submit"
-                disabled={sendingMessage || !messageText.trim()}
+                disabled={sendingMessage || (!messageText.trim() && !pendingFile)}
                 className="btn-brutal"
                 style={{
-                  background: messageText.trim() ? 'var(--success)' : '#D1D5DB',
-                  color: messageText.trim() ? 'white' : '#6B7280',
+                  background: (messageText.trim() || pendingFile) ? 'var(--success)' : '#D1D5DB',
+                  color: (messageText.trim() || pendingFile) ? 'white' : '#6B7280',
                 }}
               >
-                {sendingMessage ? '...' : 'SEND'}
+                {uploadProgress !== null ? `${uploadProgress}%` : sendingMessage ? '...' : 'SEND'}
               </button>
             </div>
           </form>

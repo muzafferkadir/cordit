@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useStore } from './store';
-import type { Message } from './types';
+import type { Message, FileAttachment } from './types';
 
 // Socket.io connects to backend public URL (for browser access)
 // Uses NEXT_PUBLIC_BACKEND_URL from environment
@@ -57,11 +57,11 @@ export const useSocket = () => {
         addMessage(message);
       });
 
-      socket.on('user_joined', (data: { username: string; timestamp: Date }) => {
+      socket.on('user_joined', () => {
         // User Has Joined
       });
 
-      socket.on('user_left', (data: { username: string; timestamp: Date }) => {
+      socket.on('user_left', () => {
         // User Has Left
       });
 
@@ -93,9 +93,9 @@ export const useSocket = () => {
     }
   }, [currentRoom]);
 
-  const sendMessage = (text: string) => {
+  const sendMessage = (text: string, attachment?: FileAttachment) => {
     if (socketRef.current && currentRoom) {
-      socketRef.current.emit('send_message', { roomId: currentRoom._id, text });
+      socketRef.current.emit('send_message', { roomId: currentRoom._id, text, attachment });
     }
   };
 
@@ -111,7 +111,7 @@ export const useSocket = () => {
     }
   };
 
-  return { sendMessage, startTyping, stopTyping, socket: socketRef.current };
+  return { sendMessage, startTyping, stopTyping, socket: globalSocket };
 };
 
 export const disconnectSocket = () => {
