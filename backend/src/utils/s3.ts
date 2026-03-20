@@ -21,13 +21,15 @@ const s3Client = new S3Client({
   forcePathStyle: true,
 });
 
-function toPublicEndpoint(url: string): string {
-  if (config.minio.endpoint !== config.minio.publicEndpoint) {
-    return url.replace(config.minio.endpoint, config.minio.publicEndpoint);
-  }
-
-  return url;
-}
+const presignClient = new S3Client({
+  endpoint: config.minio.publicEndpoint || config.minio.endpoint,
+  region: config.minio.region,
+  credentials: {
+    accessKeyId: config.minio.accessKey,
+    secretAccessKey: config.minio.secretKey,
+  },
+  forcePathStyle: true,
+});
 
 export async function initBucket(): Promise<void> {
   const bucket = config.minio.bucket;
@@ -76,8 +78,8 @@ export async function generateUploadUrl(
     ContentLength: fileSize,
   });
 
-  // Keep original signed host for upload URLs. Rewriting host breaks AWS signature validation.
-  return getSignedUrl(s3Client, command, { expiresIn: config.upload.uploadUrlExpirySeconds });
+  // Sign directly against public endpoint so browser host and signature match.
+  return getSignedUrl(presignClient, command, { expiresIn: config.upload.uploadUrlExpirySeconds });
 }
 
 export async function generateDownloadUrl(key: string): Promise<string> {
@@ -87,8 +89,8 @@ export async function generateDownloadUrl(key: string): Promise<string> {
   });
 
   // Generate presigned URL using internal endpoint, then replace with public endpoint
-  const url = await getSignedUrl(s3Client, command, { expiresIn: config.upload.downloadUrlExpirySeconds });
-  return toPublicEndpoint(url);
+  // Sign directly against public endpoint so browser host and signature match.
+  return getSignedUrl(presignClient, command, { expiresIn: config.upload.downloadUrlExpirySeconds });
 }
 
 export async function uploadObject(
