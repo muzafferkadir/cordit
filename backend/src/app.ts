@@ -36,10 +36,11 @@ const authLimiter = rateLimit({
 
 const generalLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
-  max: 120, // 120 requests per minute per IP (2 per second average)
+  max: parseInt(process.env.RATE_LIMIT_GENERAL_MAX || '600', 10),
   message: { error: 'Too many requests, please slow down.' },
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req: Request) => req.path.startsWith('/socket.io'),
 });
 
 app.use(express.json({ limit: '10kb' }));

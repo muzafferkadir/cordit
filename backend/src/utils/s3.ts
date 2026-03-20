@@ -21,6 +21,14 @@ const s3Client = new S3Client({
   forcePathStyle: true,
 });
 
+function toPublicEndpoint(url: string): string {
+  if (config.minio.endpoint !== config.minio.publicEndpoint) {
+    return url.replace(config.minio.endpoint, config.minio.publicEndpoint);
+  }
+
+  return url;
+}
+
 export async function initBucket(): Promise<void> {
   const bucket = config.minio.bucket;
   const lifecycleDays = config.upload.lifecycleExpiryDays;
@@ -68,7 +76,8 @@ export async function generateUploadUrl(
     ContentLength: fileSize,
   });
 
-  return getSignedUrl(s3Client, command, { expiresIn: config.upload.uploadUrlExpirySeconds });
+  const url = await getSignedUrl(s3Client, command, { expiresIn: config.upload.uploadUrlExpirySeconds });
+  return toPublicEndpoint(url);
 }
 
 export async function generateDownloadUrl(key: string): Promise<string> {
@@ -79,13 +88,7 @@ export async function generateDownloadUrl(key: string): Promise<string> {
 
   // Generate presigned URL using internal endpoint, then replace with public endpoint
   const url = await getSignedUrl(s3Client, command, { expiresIn: config.upload.downloadUrlExpirySeconds });
-
-  // Replace internal MinIO endpoint with public endpoint for browser access
-  if (config.minio.endpoint !== config.minio.publicEndpoint) {
-    return url.replace(config.minio.endpoint, config.minio.publicEndpoint);
-  }
-
-  return url;
+  return toPublicEndpoint(url);
 }
 
 export async function deleteObject(key: string): Promise<void> {
