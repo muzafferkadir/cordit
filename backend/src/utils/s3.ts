@@ -91,6 +91,23 @@ export async function generateDownloadUrl(key: string): Promise<string> {
   return toPublicEndpoint(url);
 }
 
+export async function uploadObject(
+  key: string,
+  body: Buffer,
+  contentType: string,
+  contentLength: number,
+): Promise<void> {
+  await s3Client.send(
+    new PutObjectCommand({
+      Bucket: config.minio.bucket,
+      Key: key,
+      Body: body,
+      ContentType: contentType,
+      ContentLength: contentLength,
+    }),
+  );
+}
+
 export async function deleteObject(key: string): Promise<void> {
   await s3Client.send(
     new DeleteObjectCommand({

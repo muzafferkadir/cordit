@@ -6,7 +6,7 @@ import { requestUpload } from '../validators/upload';
 import FileUpload from '../models/fileUpload';
 import User from '../models/user';
 import { config } from '../config';
-import { generateUploadUrl, generateDownloadUrl } from '../utils/s3';
+import { generateUploadUrl, generateDownloadUrl, uploadObject } from '../utils/s3';
 
 const router: Router = express.Router();
 
@@ -72,6 +72,50 @@ router.post('/request', verifyToken, validator(requestUpload), async (req: Reque
     });
   } catch {
     res.sendError(500, 'Failed to create upload request');
+  }
+});
+
+// PUT /upload/:id/content - Upload file bytes through backend (HTTPS-safe fallback)
+router.put('/:id/content', verifyToken, express.raw({ type: '*/*', limit: '110mb' }), async (req: Request, res: Response) => {
+  try {
+    const username = req.user?.username;
+    if (!username) {
+      res.sendError(401, 'User not authenticated');
+      return;
+    }
+
+    const fileUpload = await FileUpload.findById(req.params.id);
+    if (!fileUpload) {
+      res.sendError(404, 'File not found');
+      return;
+    }
+
+    if (fileUpload.username !== username) {
+      res.sendError(403, 'Forbidden');
+      return;
+    }
+
+    if (fileUpload.expiresAt < new Date()) {
+      res.sendError(410, 'File has expired');
+      return;
+    }
+
+    const body = req.body as Buffer;
+    if (!Buffer.isBuffer(body) || body.length === 0) {
+      res.sendError(400, 'No file content provided');
+      return;
+    }
+
+    if (body.length !== fileUpload.fileSize) {
+      res.sendError(400, 'Uploaded file size mismatch');
+      return;
+    }
+
+    await uploadObject(fileUpload.s3Key, body, fileUpload.mimeType, fileUpload.fileSize);
+
+    res.sendResponse(200, { uploaded: true });
+  } catch {
+    res.sendError(500, 'Failed to upload file content');
   }
 });
 

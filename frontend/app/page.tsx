@@ -165,7 +165,7 @@ export default function Home() {
         );
 
         // Upload file to S3
-        await uploadAPI.uploadToS3(uploadData.uploadUrl, pendingFile, setUploadProgress);
+        await uploadAPI.uploadToS3(uploadData.fileId, uploadData.uploadUrl, pendingFile, setUploadProgress);
 
         attachment = {
           fileId: uploadData.fileId,

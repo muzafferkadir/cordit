@@ -221,10 +221,50 @@ export const uploadAPI = {
   },
 
   uploadToS3: async (
+    fileId: string,
     url: string,
     file: File,
     onProgress?: (percent: number) => void,
   ): Promise<void> => {
+    const uploadViaBackend = (): Promise<void> => {
+      return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('PUT', `${API_URL}/upload/${fileId}/content`);
+
+        if (typeof window !== 'undefined') {
+          const token = localStorage.getItem('token');
+          if (token) {
+            xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+          }
+        }
+
+        xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable && onProgress) {
+            onProgress(Math.round((event.loaded / event.total) * 100));
+          }
+        };
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve();
+          } else {
+            reject(new Error(`Backend upload failed with status ${xhr.status}`));
+          }
+        };
+
+        xhr.onerror = () => reject(new Error('Backend upload failed'));
+        xhr.send(file);
+      });
+    };
+
+    // HTTPS pages cannot call insecure presigned URLs (mixed content).
+    // In that case, send bytes to backend and let backend upload to MinIO/S3.
+    if (typeof window !== 'undefined' && window.location.protocol === 'https:' && url.startsWith('http://')) {
+      return uploadViaBackend();
+    }
+
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open('PUT', url);
@@ -240,11 +280,14 @@ export const uploadAPI = {
         if (xhr.status >= 200 && xhr.status < 300) {
           resolve();
         } else {
-          reject(new Error(`Upload failed with status ${xhr.status}`));
+          // Fallback for environments where presigned endpoint is unreachable.
+          uploadViaBackend().then(resolve).catch(reject);
         }
       };
 
-      xhr.onerror = () => reject(new Error('Upload failed'));
+      xhr.onerror = () => {
+        uploadViaBackend().then(resolve).catch(() => reject(new Error('Upload failed')));
+      };
       xhr.send(file);
     });
   },
