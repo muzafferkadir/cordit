@@ -39,6 +39,7 @@ export default function Home() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const initialLoadDoneRef = useRef(false);
 
   const selectRoom = useCallback(async (roomId: string) => {
     try {
@@ -64,14 +65,22 @@ export default function Home() {
   }, [router]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || initialLoadDoneRef.current) return;
+    initialLoadDoneRef.current = true;
 
     const loadRooms = async () => {
       try {
         const data = await roomAPI.getAll();
         setRooms(data.rooms);
+
         if (data.rooms.length > 0 && !currentRoom) {
-          await selectRoom(data.rooms[0]._id);
+          const firstRoom = data.rooms[0];
+          setCurrentRoom(firstRoom);
+
+          const messagesData = await messageAPI.getByRoom(firstRoom._id);
+          setMessages(messagesData.messages);
+
+          await roomAPI.join(firstRoom._id);
         }
       } catch (error) {
         console.error('Failed to load rooms:', error);
@@ -81,7 +90,7 @@ export default function Home() {
     };
 
     loadRooms();
-  }, [currentRoom, selectRoom, setRooms, user]);
+  }, [currentRoom, setCurrentRoom, setMessages, setRooms, user]);
 
   useEffect(() => {
     if (!user) return;
